@@ -3,47 +3,64 @@ project(project)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
 
-# For behave includes
-# add_compile_options(-Wno-write-strings)
+set(BINARY_DIR ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${BINARY_DIR})
+make_directory(${BINARY_DIR})
 
+
+set(OSGEO_DIR "C:/OSGeo4W")
+
+file(GLOB SRC ${CMAKE_SOURCE_DIR}/src/*)
+file(GLOB RES ${CMAKE_SOURCE_DIR}/res/*)
+file(GLOB QGIS_DLLS ${OSGEO_DIR}/apps/qgis/bin/*)
+file(GLOB QT_DLLS ${OSGEO_DIR}/apps/Qt5/bin/*)
+file(GLOB QT_PLUGINS ${OSGEO_DIR}/apps/Qt5/plugins/*)
+
+list(APPEND CMAKE_MODULE_PATH ${OSGEO_DIR}/apps/Qt5/lib/cmake/Qt5)
+find_package(Qt5 COMPONENTS Core Gui Widgets Xml REQUIRED)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/behave)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/cadmium)
 
-file(GLOB SRC ${CMAKE_SOURCE_DIR}/src/*)
 add_executable(${PROJECT_NAME} ${SRC})
-target_link_libraries(${PROJECT_NAME} PUBLIC cadmium behave_lib)
+target_link_libraries(${PROJECT_NAME}
+    cadmium
+    behave_lib
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Widgets
+    Qt5::Xml
+    ${OSGEO_DIR}/apps/qgis/lib/qgis_core.lib
+    ${OSGEO_DIR}/apps/qgis/lib/qgis_gui.lib
+    ${OSGEO_DIR}/apps/qgis/lib/qgis_3d.lib)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${Qt5Core_INCLUDE_DIRS}
+    ${Qt5Gui_INCLUDE_DIRS}
+    ${Qt5Widgets_INCLUDE_DIRS}
+    ${Qt5Xml_INCLUDE_DIRS}
+    ${OSGEO_DIR}/apps/qgis/include)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    _USE_MATH_DEFINES)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
 
-include_directories(C:/OSGeo4W/apps/qgis/include)
-include_directories(C:/OSGeo4W/apps/Qt5/include/QtCore)
-include_directories(C:/OSGeo4W/apps/Qt5/include/QtGui)
-include_directories(C:/OSGeo4W/apps/Qt5/include/QtWidgets)
-include_directories(C:/OSGeo4W/apps/Qt5/include)
-target_link_libraries(${PROJECT_NAME} PUBLIC C:/OSGeo4W/apps/qgis/lib/qgis_3d.lib)
-target_link_libraries(${PROJECT_NAME} PUBLIC C:/OSGeo4W/apps/qgis/lib/qgis_gui.lib)
-target_link_libraries(${PROJECT_NAME} PUBLIC C:/OSGeo4W/apps/qgis/lib/qgis_core.lib)
-target_link_libraries(${PROJECT_NAME} PUBLIC C:/OSGeo4W/apps/Qt5/lib/Qt5Core.lib)
-target_link_libraries(${PROJECT_NAME} PUBLIC C:/OSGeo4W/apps/Qt5/lib/Qt5Gui.lib)
-target_link_libraries(${PROJECT_NAME} PUBLIC C:/OSGeo4W/apps/Qt5/lib/Qt5Widgets.lib)
-
-configure_file(C:/OSGeo4W/apps/qgis/bin/qgis_3d.dll ${CMAKE_BINARY_DIR}/bin COPYONLY)
-configure_file(C:/OSGeo4W/apps/qgis/bin/qgis_gui.dll ${CMAKE_BINARY_DIR}/bin COPYONLY)
-configure_file(C:/OSGeo4W/apps/qgis/bin/qgis_core.dll ${CMAKE_BINARY_DIR}/bin COPYONLY)
-configure_file(C:/OSGeo4W/apps/Qt5/bin/Qt5Core.dll ${CMAKE_BINARY_DIR}/bin COPYONLY)
-configure_file(C:/OSGeo4W/apps/Qt5/bin/Qt5Gui.dll ${CMAKE_BINARY_DIR}/bin COPYONLY)
-configure_file(C:/OSGeo4W/apps/Qt5/bin/Qt5Widgets.dll ${CMAKE_BINARY_DIR}/bin COPYONLY)
-
-# Ensure the "platforms" directory exists inside the binary output
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/platforms)
-
-# Copy the platform plugin(s)
-configure_file(C:/OSGeo4W/apps/Qt5/plugins/platforms/qwindows.dll ${CMAKE_BINARY_DIR}/bin/platforms/qwindows.dll COPYONLY)
-
-
-target_compile_options(${PROJECT_NAME} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Za>)
+foreach(PATH ${RES})
+    get_filename_component(NAME ${PATH} NAME)
+    configure_file(${PATH} ${BINARY_DIR}/${NAME} COPYONLY)
+endforeach()
+foreach(PATH ${QGIS_DLLS})
+    get_filename_component(NAME ${PATH} NAME)
+    configure_file(${PATH} ${BINARY_DIR}/${NAME} COPYONLY)
+endforeach()
+foreach(PATH ${QT_DLLS})
+    get_filename_component(NAME ${PATH} NAME)
+    configure_file(${PATH} ${BINARY_DIR}/${NAME} COPYONLY)
+endforeach()
+foreach(PATH ${QT_PLUGINS})
+    file(COPY ${PATH} DESTINATION ${BINARY_DIR})
+endforeach()

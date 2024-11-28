@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/project.exe",
+            "cwd": "${workspaceFolder}/build/bin",
+            "preLaunchTask": "CMake: build",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "C:/OSGeo4W/bin;C:/OSGeo4W/apps/Qt5/bin;${env:PATH}"
+                }
+            ],
+        }
+    ]
+}
