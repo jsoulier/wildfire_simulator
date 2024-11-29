@@ -6,23 +6,18 @@
 
 struct State
 {
-    /* params affecting neighbors */
-    double intensity;
     double spreadRate;
     double spreadDirection;
-    
-    /* params affecting us */
-    double timeToIgnition;
-    bool willBeIgnited;
+    double igniteTime;
+    bool willIgnite;
     bool ignited;
 
     State()
-        : intensity(0.0f)
-        , spreadRate(0.0f)
+        : spreadRate(0.0f)
         , spreadDirection(0.0f)
-        , timeToIgnition(INFINITY)
+        , igniteTime(INFINITY)
         , ignited(false)
-        , willBeIgnited(false)
+        , willIgnite(false)
     {
     }
 };

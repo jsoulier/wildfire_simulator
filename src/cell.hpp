@@ -29,18 +29,16 @@ public:
 
     [[nodiscard]] State localComputation(State state, const std::unordered_map<std::vector<int>, cadmium::celldevs::NeighborData<State, double>>& neighborhood) const override
     {
-        if (state.willBeIgnited)
+        if (state.ignited && state.spreadRate > 0.001f)
+        {
+            return state;
+        }
+        if (state.willIgnite)
         {
             state.ignited = true;
         }
         if (state.ignited)
         {
-            /* already computed */
-            if (state.spreadRate > 0.001f)
-            {
-                return state;
-            }
-
             FuelModels fuelModels;
             Surface surface(fuelModels);
             surface.setSlope(slope, SlopeUnits::Percent);
@@ -48,10 +46,10 @@ public:
             surface.setFuelModelNumber(fuelModelNumber);
             surface.setWindDirection(windDirection);
             surface.setWindSpeed(windSpeed, SpeedUnits::MetersPerSecond, WindHeightInputMode::DirectMidflame);
-            // surface.setWindHeightInputMode(WindHeightInputMode::DirectMidflame);
             surface.doSurfaceRunInDirectionOfMaxSpread();
             state.spreadDirection = surface.getDirectionOfMaxSpread() * M_PI / 180.0f;
             state.spreadRate = surface.getSpreadRate(SpeedUnits::MetersPerSecond);
+            return state;
         }
         for (const auto& [neighborId, neighborData]: neighborhood)
         {
@@ -61,25 +59,24 @@ public:
             }
             cadmium::celldevs::coordinates vectorFromNeighbor = distanceVectorFrom(neighborId);
             double directionFromNeighbor = atan2(vectorFromNeighbor.at(0), vectorFromNeighbor.at(1));
-
-            /* TODO: why does neighborhood include us? */
             if (directionFromNeighbor < 0.0001f)
             {
                 continue;
             }
-
             if (abs(neighborData.state->spreadDirection - directionFromNeighbor) < M_PI / 4.0f)
             {
-                double timeToIgnition = neighborData.vicinity / neighborData.state->spreadRate;
-                state.timeToIgnition = fmin(state.timeToIgnition, timeToIgnition);
-                state.willBeIgnited = true;
+                double igniteTime = neighborData.vicinity / neighborData.state->spreadRate;
+                state.igniteTime = fmin(state.igniteTime, igniteTime);
+                state.willIgnite = true;
             }
         }
         return state;
     }
 
+    /* TODO: why are cells getting scheduled before their next time occurs? */
     [[nodiscard]] double outputDelay(const State& state) const override
     {
-        return state.willBeIgnited ? state.timeToIgnition : 1.0f;
+        // return state.willIgnite ? state.igniteTime : 1.0f;
+        return 1.0f;
     }
 };
