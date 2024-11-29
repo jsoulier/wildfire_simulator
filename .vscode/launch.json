@@ -5,19 +5,13 @@
             "name": "debug",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/bin/project.exe",
+            "program": "${workspaceFolder}/build/bin/capstone.exe",
             "args": [
                 "config.json",
-                "50"
+                "200"
             ],
             "cwd": "${workspaceFolder}/build/bin",
             "preLaunchTask": "CMake: build",
-            "environment": [
-                {
-                    "name": "PATH",
-                    "value": "C:/OSGeo4W/bin;C:/OSGeo4W/apps/Qt5/bin;${env:PATH}"
-                }
-            ],
         }
     ]
 }
