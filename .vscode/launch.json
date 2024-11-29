@@ -6,6 +6,10 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/project.exe",
+            "args": [
+                "config.json",
+                "50"
+            ],
             "cwd": "${workspaceFolder}/build/bin",
             "preLaunchTask": "CMake: build",
             "environment": [

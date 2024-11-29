@@ -13,7 +13,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${BINARY_DIR})
 make_directory(${BINARY_DIR})
 
-
 set(OSGEO_DIR "C:/OSGeo4W")
 
 file(GLOB SRC ${CMAKE_SOURCE_DIR}/src/*)
@@ -28,6 +27,11 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/lib/behave)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/cadmium)
 
 add_executable(${PROJECT_NAME} ${SRC})
+
+# QGIS provides their own json_fwd.hpp
+target_include_directories(${PROJECT_NAME} BEFORE PUBLIC
+    ${CMAKE_SOURCE_DIR}/lib/cadmium/json/include)
+
 target_link_libraries(${PROJECT_NAME}
     cadmium
     behave_lib
@@ -43,7 +47,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${Qt5Gui_INCLUDE_DIRS}
     ${Qt5Widgets_INCLUDE_DIRS}
     ${Qt5Xml_INCLUDE_DIRS}
-    ${OSGEO_DIR}/apps/qgis/include)
+    ${CMAKE_SOURCE_DIR}/lib/behave/src)
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     _USE_MATH_DEFINES)
 target_compile_definitions(${PROJECT_NAME} PRIVATE
