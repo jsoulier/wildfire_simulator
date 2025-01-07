@@ -8,23 +8,21 @@ struct State
 {
     double spreadRate;
     double spreadDirection;
-    double igniteTime;
+    double timeToIgnite;
     bool willIgnite;
     bool ignited;
 
     State()
         : spreadRate(0.0f)
         , spreadDirection(0.0f)
-        , igniteTime(INFINITY)
+        , timeToIgnite(INFINITY)
         , ignited(false)
-        , willIgnite(false)
-    {
-    }
+        , willIgnite(false) {}
 };
 
 inline bool operator!=(const State& x, const State& y)
 {
-    return true;
+    return x.ignited != y.ignited || x.willIgnite != y.willIgnite;
 }
 
 inline std::ostream& operator<<(std::ostream& os, const State& x)
@@ -32,7 +30,7 @@ inline std::ostream& operator<<(std::ostream& os, const State& x)
     return os << "ignited: " << x.ignited;
 }
 
-[[maybe_unused]] inline void from_json(const nlohmann::json& j, State& s)
+inline void from_json(const nlohmann::json& j, State& s)
 {
-    s.ignited = j.at("ignited");
+    s.willIgnite = j.at("ignited");
 }

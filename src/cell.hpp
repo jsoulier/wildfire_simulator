@@ -4,8 +4,8 @@
 #include <nlohmann/json.hpp>
 #include <cadmium/celldevs/grid/cell.hpp>
 #include <cadmium/celldevs/grid/config.hpp>
-#include <behave/Surface.h>
-#include <behave/FuelModels.h>
+#include <behave/surface.h>
+#include <behave/fuelModels.h>
 #include "state.hpp"
 
 class GridCell : public cadmium::celldevs::GridCell<State, double>
@@ -17,7 +17,8 @@ class GridCell : public cadmium::celldevs::GridCell<State, double>
     double windSpeed;
 
 public:
-    GridCell(const std::vector<int>& id, const std::shared_ptr<const cadmium::celldevs::GridCellConfig<State, double>>& config)
+    GridCell(const std::vector<int>& id, const std::shared_ptr<
+            const cadmium::celldevs::GridCellConfig<State, double>>& config)
         : cadmium::celldevs::GridCell<State, double>(id, config)
     {
         slope = config->rawCellConfig.at("slope");
@@ -27,17 +28,14 @@ public:
         windSpeed = config->rawCellConfig.at("windSpeed");
     }
 
-    [[nodiscard]] State localComputation(State state, const std::unordered_map<std::vector<int>, cadmium::celldevs::NeighborData<State, double>>& neighborhood) const override
+    [[nodiscard]] State localComputation(State state, const std::unordered_map<
+        std::vector<int>, cadmium::celldevs::NeighborData<State, double>>& neighborhood) const override
     {
-        if (state.ignited && state.spreadRate > 0.001f)
+        if (state.ignited)
         {
             return state;
         }
         if (state.willIgnite)
-        {
-            state.ignited = true;
-        }
-        if (state.ignited)
         {
             FuelModels fuelModels;
             Surface surface(fuelModels);
@@ -47,6 +45,7 @@ public:
             surface.setWindDirection(windDirection);
             surface.setWindSpeed(windSpeed, SpeedUnits::MetersPerSecond, WindHeightInputMode::DirectMidflame);
             surface.doSurfaceRunInDirectionOfMaxSpread();
+            state.ignited = true;
             state.spreadDirection = surface.getDirectionOfMaxSpread() * M_PI / 180.0f;
             state.spreadRate = surface.getSpreadRate(SpeedUnits::MetersPerSecond);
             return state;
@@ -65,18 +64,27 @@ public:
             }
             if (abs(neighborData.state->spreadDirection - directionFromNeighbor) < M_PI / 4.0f)
             {
-                double igniteTime = neighborData.vicinity / neighborData.state->spreadRate;
-                state.igniteTime = fmin(state.igniteTime, igniteTime);
+                double timeToIgnite = neighborData.vicinity / neighborData.state->spreadRate;
+                state.timeToIgnite = fmin(state.timeToIgnite, timeToIgnite);
                 state.willIgnite = true;
             }
         }
         return state;
     }
 
-    /* TODO: why are cells getting scheduled before their next time occurs? */
     [[nodiscard]] double outputDelay(const State& state) const override
     {
-        // return state.willIgnite ? state.igniteTime : 1.0f;
-        return 1.0f;
+        if (state.ignited)
+        {
+            return 1.0f;
+        }
+        else if (state.willIgnite)
+        {
+            return state.timeToIgnite;
+        }
+        else
+        {
+            return 1.0f;
+        }
     }
 };

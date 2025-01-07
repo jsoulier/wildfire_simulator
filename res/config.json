@@ -1,0 +1,55 @@
+{
+    "scenario": {
+        "shape": [
+            15,
+            15
+        ],
+        "origin": [
+            0,
+            0 
+        ]
+    },
+    "cells": {
+        "default": {
+            "delay": "inertial",
+            "state": {
+                "ignited": false
+            },
+            "config": {
+                "slope": 20,
+                "aspect": 90.0,
+                "fuelModelNumber": 1,
+                "windDirection": 90.0,
+                "windSpeed": 10
+            },
+            "neighborhood": [
+                {
+                    "type": "von_neumann",
+                    "vicinity": 100,
+                    "range": 1
+                },
+                {
+                    "type": "relative",
+                    "vicinity": 100,
+                    "neighbors": [
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                }
+            ]
+        },
+        "infected": {
+            "state": {
+                "ignited": true
+            },
+            "cell_map": [
+                [
+                    12,
+                    12
+                ]
+            ]
+        }
+    }
+}
