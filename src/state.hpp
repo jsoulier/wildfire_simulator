@@ -27,7 +27,7 @@ inline bool operator!=(const State& x, const State& y)
 
 inline std::ostream& operator<<(std::ostream& os, const State& x)
 {
-    return os << "ignited: " << x.ignited;
+    return os << x.ignited;
 }
 
 inline void from_json(const nlohmann::json& j, State& s)
