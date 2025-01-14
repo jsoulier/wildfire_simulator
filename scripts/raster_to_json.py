@@ -1,15 +1,10 @@
 from PyQt5.QtWidgets import QFileDialog
-from qgis.core import (
-    QgsProcessingFeedback,
-    QgsRasterLayer,
-    QgsRasterDataProvider
-)
-import processing
-import numpy as np
-import rasterio
+from qgis.core import QgsProcessingFeedback
 import json
+import processing
+import rasterio
 
-RESOLUTION = 1000
+RESOLUTION = 100
 
 path, _ = QFileDialog.getOpenFileName(
     None,
@@ -71,6 +66,11 @@ with open(json_path, 'w') as f:
     data["cells"]["default"]["delay"] = "inertial"
     data["cells"]["default"]["state"] = {}
     data["cells"]["default"]["state"]["ignited"] = False
+
+    # TODO: See later comment
+    data["cells"]["default"]["state"]["x"] = 0
+    data["cells"]["default"]["state"]["y"] = 0
+
     data["cells"]["default"]["config"] = {}
     data["cells"]["default"]["config"]["slope"] = 20
     data["cells"]["default"]["config"]["aspect"] = 90.0
@@ -95,11 +95,16 @@ with open(json_path, 'w') as f:
             data["cells"][name]["config"]["fuelModelNumber"] = 1
             data["cells"][name]["config"]["windDirection"] = 90.0
             data["cells"][name]["config"]["windSpeed"] = 10
+
+            # TODO: Shouldn't store in states
+            data["cells"][name]["state"] = {}
+            data["cells"][name]["state"]["x"] = int(slope.x)
+            data["cells"][name]["state"]["y"] = int(slope.y)
+
             data["cells"][name]["cell_map"] = {}
             data["cells"][name]["cell_map"] = [[col, row]]
 
     # TODO:
-    data["cells"]['480000_5100000']["state"] = {}
     data["cells"]['480000_5100000']["state"]["ignited"] = True
 
     json.dump(data, f, indent=4)
