@@ -52,6 +52,10 @@ public:
         }
         for (const auto& [neighborId, neighborData]: neighborhood)
         {
+            if (this->id == cadmium::celldevs::coordinates{2, 0})
+            {
+                std::cout << "testing" << std::endl;
+            }
             if (!neighborData.state->ignited)
             {
                 continue;

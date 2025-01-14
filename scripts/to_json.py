@@ -77,11 +77,17 @@ with open(json_path, 'w') as f:
     data["cells"]["default"]["config"]["fuelModelNumber"] = 1
     data["cells"]["default"]["config"]["windDirection"] = 90.0
     data["cells"]["default"]["config"]["windSpeed"] = 10
+    data["cells"]["default"]["neighborhood"] = []
+    data["cells"]["default"]["neighborhood"].append({
+        "type": "von_neumann",
+        "vicinity": 100,
+        "range": 1
+    })
     for row in range(height):
         for col in range(width):
             slope = slopes[row][col]
             aspect = aspects[row][col]
-            name = "c{}_{}".format(int(slope.x), int(slope.y))
+            name = "{}_{}".format(int(slope.x), int(slope.y))
             data["cells"][name] = {}
             data["cells"][name]["config"] = {}
             data["cells"][name]["config"]["slope"] = slope.value
@@ -89,4 +95,11 @@ with open(json_path, 'w') as f:
             data["cells"][name]["config"]["fuelModelNumber"] = 1
             data["cells"][name]["config"]["windDirection"] = 90.0
             data["cells"][name]["config"]["windSpeed"] = 10
+            data["cells"][name]["cell_map"] = {}
+            data["cells"][name]["cell_map"] = [[col, row]]
+
+    # TODO:
+    data["cells"]['480000_5100000']["state"] = {}
+    data["cells"]['480000_5100000']["state"]["ignited"] = True
+
     json.dump(data, f, indent=4)

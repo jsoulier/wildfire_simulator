@@ -12,14 +12,7 @@ std::shared_ptr<cadmium::celldevs::GridCell<State, double>> addGridCell(
 		const cadmium::celldevs::GridCellConfig<State, double>>& cellConfig)
 {
 	const auto& cellModel = cellConfig->cellModel;
-	if (cellModel == "default" || cellModel == "")
-	{
-		return std::make_shared<GridCell>(cellId, cellConfig);
-	}
-	else
-	{
-		throw std::bad_typeid();
-	}
+	return std::make_shared<GridCell>(cellId, cellConfig);
 }
 
 int main(int argc, char ** argv)

@@ -7,10 +7,10 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/capstone.exe",
             "args": [
-                "config.json",
+                "res/map.json",
                 "200"
             ],
-            "cwd": "${workspaceFolder}/build/bin",
+            "cwd": "${workspaceFolder}",
             "preLaunchTask": "CMake: build",
         }
     ]
