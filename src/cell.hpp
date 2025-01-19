@@ -18,7 +18,7 @@ class GridCell : public cadmium::celldevs::GridCell<State, double>
 
 public:
     GridCell(const std::vector<int>& id, const std::shared_ptr<
-            const cadmium::celldevs::GridCellConfig<State, double>>& config)
+        const cadmium::celldevs::GridCellConfig<State, double>>& config)
         : cadmium::celldevs::GridCell<State, double>(id, config)
     {
         slope = config->rawCellConfig.at("slope");
@@ -35,39 +35,45 @@ public:
         {
             return state;
         }
+        state.slope = slope;
+        state.aspect = aspect;
+        state.fuelModelNumber = fuelModelNumber;
+        state.windDirection = windDirection;
+        state.windSpeed = windSpeed;
         if (state.willIgnite)
         {
-            FuelModels fuelModels;
-            Surface surface(fuelModels);
-            surface.setSlope(slope, SlopeUnits::Percent);
-            surface.setAspect(aspect);
-            surface.setFuelModelNumber(fuelModelNumber);
-            surface.setWindDirection(windDirection);
-            surface.setWindSpeed(windSpeed, SpeedUnits::MetersPerSecond, WindHeightInputMode::DirectMidflame);
-            surface.doSurfaceRunInDirectionOfMaxSpread();
             state.ignited = true;
-            state.spreadDirection = surface.getDirectionOfMaxSpread() * M_PI / 180.0f;
-            state.spreadRate = surface.getSpreadRate(SpeedUnits::MetersPerSecond);
             return state;
         }
         for (const auto& [neighborId, neighborData]: neighborhood)
         {
+            if (neighborData.state->willIgnite && !neighborData.state->ignited)
+            {
+                state.neighborWillIgnite = true;
+                state.timeToWait = neighborData.state->timeToWait;
+                continue;
+            }
             if (!neighborData.state->ignited)
             {
                 continue;
             }
             cadmium::celldevs::coordinates vectorFromNeighbor = distanceVectorFrom(neighborId);
             double directionFromNeighbor = atan2(vectorFromNeighbor.at(0), vectorFromNeighbor.at(1));
-            if (directionFromNeighbor < 0.0001f)
+            FuelModels fuelModels;
+            Surface surface(fuelModels);
+            surface.setSlope(neighborData.state->slope, SlopeUnits::Percent);
+            surface.setAspect(neighborData.state->aspect);
+            surface.setFuelModelNumber(neighborData.state->fuelModelNumber);
+            surface.setWindDirection(neighborData.state->windDirection);
+            surface.setWindSpeed(neighborData.state->windSpeed, SpeedUnits::MetersPerSecond, WindHeightInputMode::DirectMidflame);
+            surface.doSurfaceRunInDirectionOfInterest(directionFromNeighbor, SurfaceFireSpreadDirectionMode::FromIgnitionPoint);
+            const double spreadRate = surface.getSpreadRateInDirectionOfInterest(SpeedUnits::MetersPerSecond);
+            if (spreadRate < DBL_EPSILON)
             {
                 continue;
             }
-            if (abs(neighborData.state->spreadDirection - directionFromNeighbor) < M_PI / 4.0f)
-            {
-                double timeToIgnite = neighborData.vicinity / neighborData.state->spreadRate;
-                state.timeToIgnite = fmin(state.timeToIgnite, timeToIgnite);
-                state.willIgnite = true;
-            }
+            state.timeToWait = neighborData.vicinity / spreadRate;
+            state.willIgnite = true;
         }
         return state;
     }
@@ -78,9 +84,9 @@ public:
         {
             return 1.0f;
         }
-        else if (state.willIgnite)
+        else if (state.willIgnite || state.neighborWillIgnite)
         {
-            return state.timeToIgnite;
+            return state.timeToWait;
         }
         else
         {

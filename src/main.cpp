@@ -6,6 +6,7 @@
 #include <string>
 #include "cell.hpp"
 #include "state.hpp"
+#include "temporal_logger.hpp"
 
 std::shared_ptr<cadmium::celldevs::GridCell<State, double>> addGridCell(
 	const cadmium::celldevs::coordinates & cellId, const std::shared_ptr<
@@ -28,7 +29,7 @@ int main(int argc, char ** argv)
 	auto model = std::make_shared<cadmium::celldevs::GridCellDEVSCoupled<State, double>>("behave", addGridCell, configFilePath);
 	model->buildModel();
 	auto rootCoordinator = cadmium::RootCoordinator(model);
-	auto logger = std::make_shared<cadmium::CSVLogger>("grid_log.csv", ";");
+	auto logger = std::make_shared<TemporalLogger>("log.csv");
 	rootCoordinator.setLogger(logger);
 	rootCoordinator.start();
 	rootCoordinator.simulate(simTime);

@@ -2,29 +2,37 @@
 
 #include <iostream>
 #include <string>
+#include <behave/surface.h>
+#include <behave/fuelModels.h>
 #include <nlohmann/json.hpp>
 
 struct State
 {
-    double spreadRate;
-    double spreadDirection;
-    double timeToIgnite;
-    bool willIgnite;
-    bool ignited;
+    double slope;
+    double aspect;
+    int fuelModelNumber;
+    double windDirection;
+    double windSpeed;
     int x;
     int y;
 
+    double timeToWait;
+    bool neighborWillIgnite;
+    bool willIgnite;
+    bool ignited;
+
     State()
-        : spreadRate(0.0f)
-        , spreadDirection(0.0f)
-        , timeToIgnite(INFINITY)
+        : timeToWait(INFINITY)
         , ignited(false)
-        , willIgnite(false) {}
+        , willIgnite(false)
+        , neighborWillIgnite(false)
+        , x(0)
+        , y(0) {}
 };
 
 inline bool operator!=(const State& x, const State& y)
 {
-    return x.ignited != y.ignited || x.willIgnite != y.willIgnite;
+    return x.ignited != y.ignited || x.willIgnite != y.willIgnite || x.neighborWillIgnite != y.neighborWillIgnite;
 }
 
 inline std::ostream& operator<<(std::ostream& os, const State& x)

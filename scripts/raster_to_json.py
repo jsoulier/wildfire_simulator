@@ -83,10 +83,38 @@ with open(json_path, 'w') as f:
         "vicinity": 100,
         "range": 1
     })
+    def exists(row, col):
+        return (
+            row >= 0 and
+            col >= 0 and
+            row < width and
+            col < height and
+            slopes[row][col].value > 9999.0)
     for row in range(height):
         for col in range(width):
             slope = slopes[row][col]
             aspect = aspects[row][col]
+            if slope.value <= -9999.0:
+                continue
+            neighborhood = {}
+            neighborhood = []
+            neighborhood = [{
+                "type": "absolute",
+                "vicinity": 100,
+                "neighbors": []
+            }]
+            for neighbor in [(-1, 0), (1, 0), (0, 1), (0, -1)]:
+                c = col + neighbor[0]
+                r = row + neighbor[1]
+                if not (
+                    r >= 0 and
+                    c >= 0 and
+                    r < height and
+                    c < width and
+                    slopes[r][c].value > -9999.0):
+                    continue
+                neighborhood[0]["neighbors"].append((c, r))
+
             name = "{}_{}".format(int(slope.x), int(slope.y))
             data["cells"][name] = {}
             data["cells"][name]["config"] = {}
@@ -95,6 +123,8 @@ with open(json_path, 'w') as f:
             data["cells"][name]["config"]["fuelModelNumber"] = 1
             data["cells"][name]["config"]["windDirection"] = 90.0
             data["cells"][name]["config"]["windSpeed"] = 10
+
+            data["cells"][name]["neighborhood"] = neighborhood
 
             # TODO: Shouldn't store in states
             data["cells"][name]["state"] = {}
