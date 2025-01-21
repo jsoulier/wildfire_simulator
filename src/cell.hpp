@@ -10,22 +10,9 @@
 
 class Cell : public cadmium::celldevs::AsymmCell<State, double>
 {
-    double slope;
-    double aspect;
-    int fuelModelNumber;
-    double windDirection;
-    double windSpeed;
-
 public:
     Cell(const std::string& id, const std::shared_ptr<const cadmium::celldevs::AsymmCellConfig<State, double>>& config)
-        : cadmium::celldevs::AsymmCell<State, double>(id, config)
-    {
-        slope = config->rawCellConfig.at("slope");
-        aspect = config->rawCellConfig.at("aspect");
-        fuelModelNumber = config->rawCellConfig.at("fuelModelNumber");
-        windDirection = config->rawCellConfig.at("windDirection");
-        windSpeed = config->rawCellConfig.at("windSpeed");
-    }
+        : cadmium::celldevs::AsymmCell<State, double>(id, config) {}
 
     [[nodiscard]] State localComputation(State state, const std::unordered_map<
         std::string, cadmium::celldevs::NeighborData<State, double>>& neighborhood) const override
@@ -34,11 +21,6 @@ public:
         {
             return state;
         }
-        state.slope = slope;
-        state.aspect = aspect;
-        state.fuelModelNumber = fuelModelNumber;
-        state.windDirection = windDirection;
-        state.windSpeed = windSpeed;
         if (state.willIgnite)
         {
             state.ignited = true;
