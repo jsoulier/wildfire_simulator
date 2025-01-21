@@ -1,11 +1,15 @@
-from PyQt5.QtWidgets import QFileDialog
 from qgis.core import QgsProcessingFeedback
+from PyQt5.QtWidgets import QFileDialog
 import json
 import processing
 import rasterio
 import numpy
 
-FUEL_MODELS = {
+START = (420000, 5109980)
+END = (422552, 5119989)
+SPARK = (421689, 5118476)
+RESOLUTION = 20
+FUELS = {
     1: 10,   # temperate or sub-polar needleleaf forest -> FM10
     2: 13,   # sub-polar taiga -> FM13
     5: 9,    # temperate or sub-polar broadleaf deciduous forest -> FM9
@@ -23,67 +27,83 @@ FUEL_MODELS = {
     19: 92,  # snow and ice -> NB2
 }
 
-elevation_path, _ = QFileDialog.getOpenFileName(
-    None,
-    "Select Elevation File",
-    "",
-    "GeoTIFF Files (*.tif);;All Files (*)")
-if not elevation_path:
-    exit()
-land_path, _ = QFileDialog.getOpenFileName(
-    None,
-    "Select Land File",
-    "",
-    "GeoTIFF Files (*.tif);;All Files (*)")
-if not land_path:
-    exit()
-feedback = QgsProcessingFeedback()
-slope_path = elevation_path.replace('.tif', '_slope.tif')
-aspect_path = elevation_path.replace('.tif', '_aspect.tif')
-processing.run("qgis:slope", {
-    "INPUT": elevation_path,
-    "Z_FACTOR": 1.0,
-    "OUTPUT": slope_path
-}, feedback=feedback)
-processing.run("qgis:aspect", {
-    "INPUT": elevation_path,
-    "Z_FACTOR": 1.0,
-    "OUTPUT": aspect_path
-}, feedback=feedback)
-
 class Point:
     def __init__(self, x, y, value):
         self.x = x
         self.y = y
         self.value = value
 
-def to_list(path, start, end, resolution):
+class Map:
+    def __init__(self, data, width, height):
+        self.data = data
+        self.width = width
+        self.height = height
+
+def get_paths():
+    paths = {}
+    paths["elevation"], _ = QFileDialog.getOpenFileName(
+        None,
+        "Select Elevation File",
+        "",
+        "GeoTIFF Files (*.tif);;All Files (*)")
+    if not paths["elevation"]:
+        return False
+    paths["land"], _ = QFileDialog.getOpenFileName(
+        None,
+        "Select Land File",
+        "",
+        "GeoTIFF Files (*.tif);;All Files (*)")
+    if not paths["land"]:
+        return False
+    paths["json"], _ = QFileDialog.getSaveFileName(
+        None,
+        "Save JSON File",
+        "",
+        "JSON Files (*.json);;All Files (*)")
+    if not paths["json"]:
+        return False
+    paths["slope"] = paths["elevation"].replace(".tif", ".slope.tif")
+    paths["aspect"] = paths["elevation"].replace(".tif", ".aspect.tif")
+    return paths
+
+def convert_maps(paths):
+    feedback = QgsProcessingFeedback()
+    processing.run("qgis:slope", {
+        "INPUT": paths["elevation"],
+        "Z_FACTOR": 1.0,
+        "OUTPUT": paths["slope"]
+    }, feedback=feedback)
+    processing.run("qgis:aspect", {
+        "INPUT": paths["elevation"],
+        "Z_FACTOR": 1.0,
+        "OUTPUT": paths["aspect"]
+    }, feedback=feedback)
+
+def get_raw_maps(path):
     with rasterio.open(path) as src:
         crs = src.crs.to_string()
         if crs != "EPSG:2959":
             transform, width, height = rasterio._warp._calculate_default_transform(
                 src.crs, "EPSG:2959", src.width, src.height, *src.bounds)
-            reprojected_data = numpy.empty((height, width), dtype=numpy.float32)
+            data = numpy.empty((height, width), dtype=numpy.float32)
             rasterio._warp._reproject(
                 source=src.read(1),
-                destination=reprojected_data,
+                destination=data,
                 src_transform=src.transform,
                 src_crs=src.crs,
                 dst_transform=transform,
                 dst_crs="EPSG:2959",
                 resampling=rasterio._warp.Resampling.nearest)
-            transform = transform
-            data = reprojected_data
         else:
             data = src.read(1)
             transform = src.transform
-        x1, y1 = start
-        x2, y2 = end
+        x1, y1 = START
+        x2, y2 = END
         points = []
         width = 0
-        for y in range(y1, y2, resolution):
+        for y in range(y1, y2, RESOLUTION):
             points.append([])
-            for x in range(x1, x2, resolution):
+            for x in range(x1, x2, RESOLUTION):
                 row, col = rasterio.transform.rowcol(transform, x, y)
                 try:
                     value = data[row, col]
@@ -91,68 +111,72 @@ def to_list(path, start, end, resolution):
                 except:
                     pass
             width = max(width, len(points[-1]))
-        return points, width, len(points)
+        return Map(points, width, len(points))
 
-start = (420000, 5109980)
-end = (422552, 5119989)
-resolution = 100
-slopes, slopes_width, slopes_height = to_list(slope_path, start, end, resolution)
-aspects, aspects_width, aspects_height = to_list(aspect_path, start, end, resolution)
-land, land_width, land_height = to_list(land_path, start, end, resolution)
-width = min(min(slopes_width, aspects_width), land_width)
-height = min(min(slopes_height, aspects_height), land_height)
-
-json_path, _ = QFileDialog.getSaveFileName(
-    None,
-    "Save JSON File",
-    "",
-    "JSON Files (*.json);;All Files (*)")
-if not json_path:
-    exit()
-with open(json_path, "w") as f:
-    data = {}
-    data["cells"] = {}
-    data["cells"]["default"] = {}
-    data["cells"]["default"]["delay"] = "inertial"
-    for row in range(height):
-        for col in range(width):
-            try:
-                slope = slopes[row][col]
-                aspect = aspects[row][col]
-                fuel = land[row][col]
-            except:
-                continue
-            if slope.value <= -9999.0:
-                continue
-            fuel = FUEL_MODELS[int(fuel.value)]
-            name = "{}_{}".format(int(slope.x), int(slope.y))
-            data["cells"][name] = {}
-            data["cells"][name]["neighborhood"] = {}
-            for neighbor in [(-1, 0), (1, 0), (0, 1), (0, -1)]:
-                c = col + neighbor[0]
-                r = row + neighbor[1]
-                if c < 0 or r < 0 or c >= width or r >= height:
-                    continue
+def dump_json(maps, paths, width, height):
+    def get_name(point):
+        return "{}_{}".format(point.x, point.y)
+    with open(paths["json"], "w") as f:
+        data = {}
+        data["cells"] = {}
+        data["cells"]["default"] = {}
+        data["cells"]["default"]["delay"] = "inertial"
+        for row in range(height):
+            for col in range(width):
                 try:
-                    if slopes[r][c].value <= -9999.0:
-                        continue
-                    aspects[r][c]
-                    land[r][c]
-                except:
+                    slope = maps["slope"].data[row][col]
+                    aspect = maps["aspect"].data[row][col]
+                    land = maps["land"].data[row][col]
+                except Exception as e:
                     continue
-                s = slopes[r][c]
-                data["cells"][name]["neighborhood"]["{}_{}".format(s.x, s.y)] = resolution
-            data["cells"][name]["state"] = {}
-            data["cells"][name]["state"]["slope"] = slope.value
-            data["cells"][name]["state"]["aspect"] = aspect.value
-            data["cells"][name]["state"]["fuelModelNumber"] = fuel
-            data["cells"][name]["state"]["windDirection"] = 90.0
-            data["cells"][name]["state"]["windSpeed"] = 10
-            data["cells"][name]["state"]["x"] = int(slope.x)
-            data["cells"][name]["state"]["y"] = int(slope.y)
-            data["cells"][name]["state"]["ignited"] = False
+                if slope.value <= -9999.0:
+                    continue
+                fuel = FUELS[int(land.value)]
+                name = get_name(slope)
+                data["cells"][name] = {}
+                data["cells"][name]["neighborhood"] = {}
+                for neighbor in [(-1, 0), (1, 0), (0, 1), (0, -1)]:
+                    c = col + neighbor[0]
+                    r = row + neighbor[1]
+                    if c < 0 or r < 0 or c >= width or r >= height:
+                        continue
+                    try:
+                        s = maps["slope"].data[r][c]
+                        if s.value <= -9999.0:
+                            continue
+                        maps["aspect"].data[r][c]
+                        maps["land"].data[r][c]
+                    except:
+                        continue
+                    data["cells"][name]["neighborhood"][get_name(s)] = RESOLUTION
+                data["cells"][name]["state"] = {}
+                data["cells"][name]["state"]["slope"] = slope.value
+                data["cells"][name]["state"]["aspect"] = aspect.value
+                data["cells"][name]["state"]["fuelModelNumber"] = fuel
+                data["cells"][name]["state"]["windDirection"] = 90.0
+                data["cells"][name]["state"]["windSpeed"] = 10
+                data["cells"][name]["state"]["x"] = int(slope.x)
+                data["cells"][name]["state"]["y"] = int(slope.y)
+                data["cells"][name]["state"]["ignited"] = False
+        x = int(START[0] + round((SPARK[0] - START[0]) / RESOLUTION) * RESOLUTION)
+        y = int(START[1] + round((SPARK[1] - START[1]) / RESOLUTION) * RESOLUTION)
+        try:
+            data["cells"][get_name(Point(x, y, 0))]["state"]["ignited"] = True
+        except:
+            print("Invalid spark location: {}, {}".format(SPARK, (x, y)))
+        json.dump(data, f, indent=4)
 
-    # TODO:
-    data["cells"]["420100_5110080"]["state"]["ignited"] = True
+def main():
+    paths = get_paths()
+    if not paths:
+        return
+    convert_maps(paths)
+    maps = {}
+    maps["slope"] = get_raw_maps(paths["slope"])
+    maps["aspect"] = get_raw_maps(paths["aspect"])
+    maps["land"] = get_raw_maps(paths["land"])
+    width = min(min(maps["slope"].width, maps["aspect"].width), maps["land"].width)
+    height = min(min(maps["slope"].height, maps["aspect"].height), maps["land"].height)
+    dump_json(maps, paths, width, height)
 
-    json.dump(data, f, indent=4)
+main()
