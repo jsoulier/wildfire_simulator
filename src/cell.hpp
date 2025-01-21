@@ -2,13 +2,13 @@
 
 #include <cmath>
 #include <nlohmann/json.hpp>
-#include <cadmium/celldevs/grid/cell.hpp>
-#include <cadmium/celldevs/grid/config.hpp>
+#include <cadmium/celldevs/asymm/cell.hpp>
+#include <cadmium/celldevs/asymm/config.hpp>
 #include <behave/surface.h>
 #include <behave/fuelModels.h>
 #include "state.hpp"
 
-class GridCell : public cadmium::celldevs::GridCell<State, double>
+class Cell : public cadmium::celldevs::AsymmCell<State, double>
 {
     double slope;
     double aspect;
@@ -17,9 +17,8 @@ class GridCell : public cadmium::celldevs::GridCell<State, double>
     double windSpeed;
 
 public:
-    GridCell(const std::vector<int>& id, const std::shared_ptr<
-        const cadmium::celldevs::GridCellConfig<State, double>>& config)
-        : cadmium::celldevs::GridCell<State, double>(id, config)
+    Cell(const std::string& id, const std::shared_ptr<const cadmium::celldevs::AsymmCellConfig<State, double>>& config)
+        : cadmium::celldevs::AsymmCell<State, double>(id, config)
     {
         slope = config->rawCellConfig.at("slope");
         aspect = config->rawCellConfig.at("aspect");
@@ -29,7 +28,7 @@ public:
     }
 
     [[nodiscard]] State localComputation(State state, const std::unordered_map<
-        std::vector<int>, cadmium::celldevs::NeighborData<State, double>>& neighborhood) const override
+        std::string, cadmium::celldevs::NeighborData<State, double>>& neighborhood) const override
     {
         if (state.ignited)
         {
@@ -57,8 +56,9 @@ public:
             {
                 continue;
             }
-            cadmium::celldevs::coordinates vectorFromNeighbor = distanceVectorFrom(neighborId);
-            double directionFromNeighbor = atan2(vectorFromNeighbor.at(0), vectorFromNeighbor.at(1));
+            double deltaX = state.x - neighborData.state->x;
+            double deltaY = state.y - neighborData.state->y;
+            double directionFromNeighbor = atan2(deltaX, deltaY);
             FuelModels fuelModels;
             Surface surface(fuelModels);
             surface.setSlope(neighborData.state->slope, SlopeUnits::Percent);

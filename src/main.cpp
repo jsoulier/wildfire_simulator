@@ -1,4 +1,4 @@
-#include <cadmium/celldevs/grid/coupled.hpp>
+#include <cadmium/celldevs/asymm/coupled.hpp>
 #include <cadmium/core/logger/csv.hpp>
 #include <cadmium/core/simulation/root_coordinator.hpp>
 #include <fstream>
@@ -8,12 +8,10 @@
 #include "state.hpp"
 #include "temporal_logger.hpp"
 
-std::shared_ptr<cadmium::celldevs::GridCell<State, double>> addGridCell(
-	const cadmium::celldevs::coordinates & cellId, const std::shared_ptr<
-		const cadmium::celldevs::GridCellConfig<State, double>>& cellConfig)
+std::shared_ptr<cadmium::celldevs::AsymmCell<State, double>> addCell(
+	const std::string& cellId, const std::shared_ptr<const cadmium::celldevs::AsymmCellConfig<State, double>>& cellConfig)
 {
-	const auto& cellModel = cellConfig->cellModel;
-	return std::make_shared<GridCell>(cellId, cellConfig);
+	return std::make_shared<Cell>(cellId, cellConfig);
 }
 
 int main(int argc, char ** argv)
@@ -26,7 +24,7 @@ int main(int argc, char ** argv)
 	}
 	std::string configFilePath = argv[1];
 	double simTime = (argc > 2) ? std::stod(argv[2]) : 500;
-	auto model = std::make_shared<cadmium::celldevs::GridCellDEVSCoupled<State, double>>("behave", addGridCell, configFilePath);
+	auto model = std::make_shared<cadmium::celldevs::AsymmCellDEVSCoupled<State, double>>("behave", addCell, configFilePath);
 	model->buildModel();
 	auto rootCoordinator = cadmium::RootCoordinator(model);
 	auto logger = std::make_shared<TemporalLogger>("log.csv");

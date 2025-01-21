@@ -4,8 +4,6 @@ import json
 import processing
 import rasterio
 
-RESOLUTION = 100
-
 path, _ = QFileDialog.getOpenFileName(
     None,
     "Select GeoTIFF File",
@@ -34,107 +32,81 @@ class Point:
         self.y = y
         self.value = value
 
-def to_list(path):
+def to_list(path, start, end, resolution):
     with rasterio.open(path) as src:
-        width = src.width
-        height = src.height
-        transform = src.transform
+        if src.crs.to_string() != "EPSG:2959":
+            raise ValueError("Raster CRS does not match EPSG:2959")
         data = src.read(1)
+        transform = src.transform
+        x1, y1 = start
+        x2, y2 = end
         points = []
-        i = 0
-        for row in range(0, height, RESOLUTION):
+        width = 0
+        for y in range(y1, y2, resolution):
             points.append([])
-            for col in range(0, width, RESOLUTION):
-                x, y = transform * (col, row)
-                value = data[row, col]
-                points[i].append(Point(x, y, value.item()))
-            i += 1
-        return points
+            for x in range(x1, x2, resolution):
+                row, col = rasterio.transform.rowcol(transform, x, y)
+                try:
+                    value = data[row, col]
+                    points[-1].append(Point(x, y, value.item()))
+                except:
+                    pass
+            width = max(width, len(points[-1]))
+        return points, width, len(points)
 
-slopes = to_list(slope_path)
-aspects = to_list(aspect_path)
+start = (480000, 5090000)
+end = (490000, 5100000)
+resolution = 100
+slopes, slopes_width, slopes_height = to_list(slope_path, start, end, resolution)
+aspects, aspects_width, aspects_height = to_list(aspect_path, start, end, resolution)
 
 with open(json_path, 'w') as f:
-    width = len(slopes[0])
-    height = len(slopes)
     data = {}
-    data['scenario'] = {}
-    data['scenario']['shape'] = [width, height]
-    data['scenario']['origin'] = [0, 0]
     data["cells"] = {}
     data["cells"]["default"] = {}
     data["cells"]["default"]["delay"] = "inertial"
-    data["cells"]["default"]["state"] = {}
-    data["cells"]["default"]["state"]["ignited"] = False
-
-    # TODO: See later comment
-    data["cells"]["default"]["state"]["x"] = 0
-    data["cells"]["default"]["state"]["y"] = 0
-
     data["cells"]["default"]["config"] = {}
     data["cells"]["default"]["config"]["slope"] = 20
     data["cells"]["default"]["config"]["aspect"] = 90.0
     data["cells"]["default"]["config"]["fuelModelNumber"] = 1
     data["cells"]["default"]["config"]["windDirection"] = 90.0
     data["cells"]["default"]["config"]["windSpeed"] = 10
-    data["cells"]["default"]["neighborhood"] = []
-    data["cells"]["default"]["neighborhood"].append({
-        "type": "von_neumann",
-        "vicinity": 100,
-        "range": 1
-    })
-    def exists(row, col):
-        return (
-            row >= 0 and
-            col >= 0 and
-            row < width and
-            col < height and
-            slopes[row][col].value > 9999.0)
-    for row in range(height):
-        for col in range(width):
-            slope = slopes[row][col]
-            aspect = aspects[row][col]
+    for row in range(slopes_height):
+        for col in range(slopes_width):
+            try:
+                slope = slopes[row][col]
+                aspect = aspects[row][col]
+            except:
+                continue
             if slope.value <= -9999.0:
                 continue
-            neighborhood = {}
-            neighborhood = []
-            neighborhood = [{
-                "type": "absolute",
-                "vicinity": 100,
-                "neighbors": []
-            }]
+            name = "{}_{}".format(int(slope.x), int(slope.y))
+            data["cells"][name] = {}
+            data["cells"][name]["neighborhood"] = {}
             for neighbor in [(-1, 0), (1, 0), (0, 1), (0, -1)]:
                 c = col + neighbor[0]
                 r = row + neighbor[1]
                 if not (
                     r >= 0 and
                     c >= 0 and
-                    r < height and
-                    c < width and
+                    r < slopes_height and
+                    c < slopes_width and
                     slopes[r][c].value > -9999.0):
                     continue
-                neighborhood[0]["neighbors"].append((c, r))
-
-            name = "{}_{}".format(int(slope.x), int(slope.y))
-            data["cells"][name] = {}
+                s = slopes[r][c]
+                data["cells"][name]["neighborhood"]["{}_{}".format(s.x, s.y)] = resolution
             data["cells"][name]["config"] = {}
             data["cells"][name]["config"]["slope"] = slope.value
             data["cells"][name]["config"]["aspect"] = aspect.value
             data["cells"][name]["config"]["fuelModelNumber"] = 1
             data["cells"][name]["config"]["windDirection"] = 90.0
             data["cells"][name]["config"]["windSpeed"] = 10
-
-            data["cells"][name]["neighborhood"] = neighborhood
-
-            # TODO: Shouldn't store in states
             data["cells"][name]["state"] = {}
             data["cells"][name]["state"]["x"] = int(slope.x)
             data["cells"][name]["state"]["y"] = int(slope.y)
-
-            data["cells"][name]["cell_map"] = {}
-            data["cells"][name]["cell_map"] = [[col, row]]
+            data["cells"][name]["state"]["ignited"] = False
 
     # TODO:
-    data["cells"]['480000_5100000']["state"]["ignited"] = True
+    data["cells"]['480400_5091100']["state"]["ignited"] = True
 
     json.dump(data, f, indent=4)
