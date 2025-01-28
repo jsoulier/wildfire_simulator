@@ -5,10 +5,12 @@ import processing
 import rasterio
 import numpy
 
-START = (420000, 5109980)
-END = (422552, 5119989)
-SPARK = (421689, 5118476)
-RESOLUTION = 20
+START = (466817, 5087372)
+END = (483033, 5119989)
+SPARK = (475171, 5098378)
+RESOLUTION = 100
+WIND_SPEED = 30
+WIND_DIRECTION = 0
 FUELS = {
     1: 10,   # temperate or sub-polar needleleaf forest -> FM10
     2: 13,   # sub-polar taiga -> FM13
@@ -131,7 +133,10 @@ def dump_json(maps, paths, width, height):
                     continue
                 if slope.value <= -9999.0:
                     continue
-                fuel = FUELS[int(land.value)]
+                try:
+                    fuel = FUELS[int(land.value)]
+                except:
+                    continue
                 name = get_name(slope)
                 data["cells"][name] = {}
                 data["cells"][name]["neighborhood"] = {}
@@ -145,7 +150,7 @@ def dump_json(maps, paths, width, height):
                         if s.value <= -9999.0:
                             continue
                         maps["aspect"].data[r][c]
-                        maps["land"].data[r][c]
+                        FUELS[int(maps["land"].data[r][c].value)]
                     except:
                         continue
                     data["cells"][name]["neighborhood"][get_name(s)] = RESOLUTION
@@ -153,8 +158,8 @@ def dump_json(maps, paths, width, height):
                 data["cells"][name]["state"]["slope"] = slope.value
                 data["cells"][name]["state"]["aspect"] = aspect.value
                 data["cells"][name]["state"]["fuelModelNumber"] = fuel
-                data["cells"][name]["state"]["windDirection"] = 90.0
-                data["cells"][name]["state"]["windSpeed"] = 10
+                data["cells"][name]["state"]["windDirection"] = WIND_DIRECTION
+                data["cells"][name]["state"]["windSpeed"] = WIND_SPEED
                 data["cells"][name]["state"]["x"] = int(slope.x)
                 data["cells"][name]["state"]["y"] = int(slope.y)
                 data["cells"][name]["state"]["ignited"] = False

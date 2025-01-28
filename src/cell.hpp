@@ -40,15 +40,37 @@ public:
             }
             double deltaX = state.x - neighborData.state->x;
             double deltaY = state.y - neighborData.state->y;
-            double directionFromNeighbor = atan2(deltaX, deltaY);
+            double direction = atan2(deltaX, deltaY) * 180.0 / M_PI;
             FuelModels fuelModels;
             Surface surface(fuelModels);
-            surface.setSlope(neighborData.state->slope, SlopeUnits::Percent);
-            surface.setAspect(neighborData.state->aspect);
-            surface.setFuelModelNumber(neighborData.state->fuelModelNumber);
-            surface.setWindDirection(neighborData.state->windDirection);
-            surface.setWindSpeed(neighborData.state->windSpeed, SpeedUnits::MetersPerSecond, WindHeightInputMode::DirectMidflame);
-            surface.doSurfaceRunInDirectionOfInterest(directionFromNeighbor, SurfaceFireSpreadDirectionMode::FromIgnitionPoint);
+            surface.updateSurfaceInputsForTwoFuelModels(
+                neighborData.state->fuelModelNumber,
+                state.fuelModelNumber,
+                1.0f, // moistureOneHour
+                1.0f, // moistureTenHour
+                1.0f, // moistureHundredHour
+                0.0f, // moistureLiveHerbaceous
+                0.0f, // moistureLiveWoody,
+                FractionUnits::Percent, // moistureUnits
+                neighborData.state->windSpeed,
+                SpeedUnits::MetersPerMinute, // windSpeedUnits
+                WindHeightInputMode::DirectMidflame, // windHeightInputMode
+                neighborData.state->windDirection,
+                WindAndSpreadOrientationMode::RelativeToNorth, // windAndSpreadOrientationMode
+                50.0f, // firstFuelModelCoverage,
+                FractionUnits::Percent, // firstFuelModelCoverageUnits
+                TwoFuelModelsMethod::Arithmetic, // twoFuelModelMethod
+                neighborData.state->slope,
+                SlopeUnits::Degrees, // slopeUnits
+                neighborData.state->aspect,
+                30.0f, // canopyCover
+                FractionUnits::Percent, // canopyCoverUnits
+                10.0f, // canopyHeight,
+                LengthUnits::Meters, // canopyHeightUnits,
+                40.0f, // crownRatio,
+                FractionUnits::Percent // crownRatioUnits
+            );
+            surface.doSurfaceRunInDirectionOfInterest(direction, SurfaceFireSpreadDirectionMode::FromIgnitionPoint);
             const double spreadRate = surface.getSpreadRateInDirectionOfInterest(SpeedUnits::MetersPerSecond);
             if (spreadRate < DBL_EPSILON)
             {

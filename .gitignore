@@ -1,5 +1,7 @@
 build
 res
+high_res
+low_res
 __pycache__
 *.csv
 *.tif
