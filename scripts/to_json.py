@@ -133,6 +133,8 @@ def dump_json(maps, paths, width, height):
                     continue
                 if slope.value <= -9999.0:
                     continue
+                if aspect.value <= -9999.0:
+                    continue
                 try:
                     fuel = FUELS[int(land.value)]
                 except:
@@ -149,7 +151,9 @@ def dump_json(maps, paths, width, height):
                         s = maps["slope"].data[r][c]
                         if s.value <= -9999.0:
                             continue
-                        maps["aspect"].data[r][c]
+                        a = maps["aspect"].data[r][c]
+                        if a.value <= -9999.0:
+                            continue
                         FUELS[int(maps["land"].data[r][c].value)]
                     except:
                         continue
