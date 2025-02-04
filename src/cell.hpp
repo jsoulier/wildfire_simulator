@@ -17,11 +17,8 @@ public:
     [[nodiscard]] State localComputation(State state, const std::unordered_map<
         std::string, cadmium::celldevs::NeighborData<State, double>>& neighborhood) const override
     {
-        if (state.ignited)
-        {
-            return state;
-        }
-        if (state.willIgnite)
+        state.timeToWait = INFINITY;
+        if (state.ignited || state.willIgnite)
         {
             state.ignited = true;
             return state;
@@ -31,6 +28,8 @@ public:
             if (neighborData.state->willIgnite && !neighborData.state->ignited)
             {
                 state.neighborWillIgnite = true;
+                // todo:
+                // state.timeToWait = std::min(state.timeToWait, neighborData.state->timeToWait);
                 state.timeToWait = neighborData.state->timeToWait;
                 continue;
             }
@@ -72,11 +71,19 @@ public:
             );
             surface.doSurfaceRunInDirectionOfInterest(direction, SurfaceFireSpreadDirectionMode::FromIgnitionPoint);
             const double spreadRate = surface.getSpreadRateInDirectionOfInterest(SpeedUnits::MetersPerSecond);
-            if (spreadRate < DBL_EPSILON)
+            if (spreadRate < DBL_EPSILON || spreadRate != spreadRate)
             {
                 continue;
             }
+            // todo:
+            // state.timeToWait = std::min(state.timeToWait, neighborData.vicinity / spreadRate);
             state.timeToWait = neighborData.vicinity / spreadRate;
+            // if (state.timeToWait != state.timeToWait)
+            // {
+            //     std::cout << state.timeToWait << std::endl;
+            //     surface.doSurfaceRunInDirectionOfInterest(direction, SurfaceFireSpreadDirectionMode::FromIgnitionPoint);
+            //     surface.getSpreadRateInDirectionOfInterest(SpeedUnits::MetersPerSecond);
+            // }
             state.willIgnite = true;
         }
         return state;

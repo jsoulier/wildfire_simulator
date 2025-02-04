@@ -25,7 +25,7 @@ int main(int argc, char** argv)
     auto model = std::make_shared<cadmium::celldevs::AsymmCellDEVSCoupled<State, double>>("behave", addCell, argv[1]);
     model->buildModel();
     auto coordinator = cadmium::RootCoordinator(model);
-    auto logger = std::make_shared<TemporalLogger>("log.csv");
+    auto logger = std::make_shared<TemporalLogger>("log3.csv");
     coordinator.setLogger(logger);
     coordinator.start();
     coordinator.simulate(std::stod(argv[2]));

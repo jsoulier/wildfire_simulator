@@ -43,6 +43,7 @@ inline std::ostream& operator<<(std::ostream& os, const State& x)
 inline void from_json(const nlohmann::json& j, State& s)
 {
     s.willIgnite = j.at("ignited");
+    s.ignited = j.at("ignited");
     s.x = j.at("x");
     s.y = j.at("y");
     s.slope = j.at("slope");
