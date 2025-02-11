@@ -5,12 +5,12 @@ import processing
 import rasterio
 import numpy
 
-START = (466817, 5087372)
-END = (483033, 5119989)
-SPARK = (475171, 5098378)
-RESOLUTION = 100
+START = (824399, 5237360)
+END = (831982, 5248133)
+SPARK = (825149, 5243548)
+RESOLUTION = 50
 WIND_SPEED = 30
-WIND_DIRECTION = 0
+WIND_DIRECTION = 90
 FUELS = {
     1: 10,   # temperate or sub-polar needleleaf forest -> FM10
     2: 13,   # sub-polar taiga -> FM13
@@ -30,10 +30,11 @@ FUELS = {
 }
 
 class Point:
-    def __init__(self, x, y, value):
+    def __init__(self, x, y, value, shifted):
         self.x = x
         self.y = y
         self.value = value
+        self.shifted = shifted
 
 class Map:
     def __init__(self, data, width, height):
@@ -103,16 +104,24 @@ def get_raw_maps(path):
         x2, y2 = END
         points = []
         width = 0
-        for y in range(y1, y2, RESOLUTION):
+        shift = 0
+        y_resolution = int(RESOLUTION / 2 * 1.1547)
+        x_resolution = int(RESOLUTION * 2)
+        for y in range(y1, y2, y_resolution):
             points.append([])
-            for x in range(x1, x2, RESOLUTION):
+            for x in range(x1, x2, x_resolution):
+                shifted = False
+                if shift % 2:
+                    x += int(x_resolution / 2)
+                    shifted = True
                 row, col = rasterio.transform.rowcol(transform, x, y)
                 try:
                     value = data[row, col]
-                    points[-1].append(Point(x, y, value.item()))
+                    points[-1].append(Point(x, y, value.item(), shifted))
                 except:
                     pass
             width = max(width, len(points[-1]))
+            shift += 1
         return Map(points, width, len(points))
 
 def dump_json(maps, paths, width, height):
@@ -142,7 +151,12 @@ def dump_json(maps, paths, width, height):
                 name = get_name(slope)
                 data["cells"][name] = {}
                 data["cells"][name]["neighborhood"] = {}
-                for neighbor in [(-1, 0), (1, 0), (0, 1), (0, -1)]:
+                neighborhood = []
+                if not slope.shifted:
+                    neighborhood = [(0, -2), (0, -1), (0, 1), (0, 2), (-1, -1), (-1, 1)]
+                else:
+                    neighborhood = [(0, -2), (0, -1), (0, 1), (0, 2), (1, -1), (1, 1)]
+                for neighbor in neighborhood:
                     c = col + neighbor[0]
                     r = row + neighbor[1]
                     if c < 0 or r < 0 or c >= width or r >= height:
@@ -167,12 +181,10 @@ def dump_json(maps, paths, width, height):
                 data["cells"][name]["state"]["x"] = int(slope.x)
                 data["cells"][name]["state"]["y"] = int(slope.y)
                 data["cells"][name]["state"]["ignited"] = False
-        x = int(START[0] + round((SPARK[0] - START[0]) / RESOLUTION) * RESOLUTION)
-        y = int(START[1] + round((SPARK[1] - START[1]) / RESOLUTION) * RESOLUTION)
         try:
-            data["cells"][get_name(Point(x, y, 0))]["state"]["ignited"] = True
+            data["cells"][get_name(Point(SPARK[0], SPARK[1], 0, False))]["state"]["ignited"] = True
         except:
-            print("Invalid spark location: {}, {}".format(SPARK, (x, y)))
+            print("Invalid spark location: {}".format(SPARK))
         json.dump(data, f, indent=4)
 
 def main():

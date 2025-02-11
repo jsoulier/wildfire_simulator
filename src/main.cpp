@@ -6,7 +6,7 @@
 #include <string>
 #include "cell.hpp"
 #include "state.hpp"
-#include "temporal_logger.hpp"
+#include "logger.hpp"
 
 std::shared_ptr<cadmium::celldevs::AsymmCell<State, double>> addCell(
     const std::string& cellId, const std::shared_ptr<const cadmium::celldevs::AsymmCellConfig<State, double>>& cellConfig)
@@ -25,7 +25,7 @@ int main(int argc, char** argv)
     auto model = std::make_shared<cadmium::celldevs::AsymmCellDEVSCoupled<State, double>>("behave", addCell, argv[1]);
     model->buildModel();
     auto coordinator = cadmium::RootCoordinator(model);
-    auto logger = std::make_shared<TemporalLogger>("log.csv");
+    auto logger = std::make_shared<Logger>("ignition.csv");
     coordinator.setLogger(logger);
     coordinator.start();
     coordinator.simulate(std::stod(argv[2]));

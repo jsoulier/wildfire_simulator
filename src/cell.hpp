@@ -17,23 +17,13 @@ public:
     [[nodiscard]] State localComputation(State state, const std::unordered_map<
         std::string, cadmium::celldevs::NeighborData<State, double>>& neighborhood) const override
     {
-        if (state.ignited)
-        {
-            return state;
-        }
-        if (state.willIgnite)
+        if (state.ignited || (state.willIgnite && state.ignitionTime <= this->clock))
         {
             state.ignited = true;
             return state;
         }
         for (const auto& [neighborId, neighborData]: neighborhood)
         {
-            if (neighborData.state->willIgnite && !neighborData.state->ignited)
-            {
-                state.neighborWillIgnite = true;
-                state.timeToWait = neighborData.state->timeToWait;
-                continue;
-            }
             if (!neighborData.state->ignited)
             {
                 continue;
@@ -46,37 +36,38 @@ public:
             surface.updateSurfaceInputsForTwoFuelModels(
                 neighborData.state->fuelModelNumber,
                 state.fuelModelNumber,
-                1.0f, // moistureOneHour
-                1.0f, // moistureTenHour
-                1.0f, // moistureHundredHour
-                0.0f, // moistureLiveHerbaceous
-                0.0f, // moistureLiveWoody,
+                1.0, // moistureOneHour
+                1.0, // moistureTenHour
+                1.0, // moistureHundredHour
+                0.0, // moistureLiveHerbaceous
+                0.0, // moistureLiveWoody,
                 FractionUnits::Percent, // moistureUnits
                 neighborData.state->windSpeed,
                 SpeedUnits::MetersPerMinute, // windSpeedUnits
                 WindHeightInputMode::DirectMidflame, // windHeightInputMode
                 neighborData.state->windDirection,
                 WindAndSpreadOrientationMode::RelativeToNorth, // windAndSpreadOrientationMode
-                50.0f, // firstFuelModelCoverage,
+                50.0, // firstFuelModelCoverage,
                 FractionUnits::Percent, // firstFuelModelCoverageUnits
                 TwoFuelModelsMethod::Arithmetic, // twoFuelModelMethod
                 neighborData.state->slope,
                 SlopeUnits::Degrees, // slopeUnits
                 neighborData.state->aspect,
-                30.0f, // canopyCover
+                30.0, // canopyCover
                 FractionUnits::Percent, // canopyCoverUnits
-                10.0f, // canopyHeight,
+                10.0, // canopyHeight,
                 LengthUnits::Meters, // canopyHeightUnits,
-                40.0f, // crownRatio,
+                40.0, // crownRatio,
                 FractionUnits::Percent // crownRatioUnits
             );
             surface.doSurfaceRunInDirectionOfInterest(direction, SurfaceFireSpreadDirectionMode::FromIgnitionPoint);
             const double spreadRate = surface.getSpreadRateInDirectionOfInterest(SpeedUnits::MetersPerSecond);
-            if (spreadRate < DBL_EPSILON)
+            if (spreadRate < DBL_EPSILON || spreadRate != spreadRate)
             {
                 continue;
             }
-            state.timeToWait = neighborData.vicinity / spreadRate;
+            const double timeToWait = neighborData.vicinity / spreadRate;
+            state.ignitionTime = std::min(state.ignitionTime, this->clock + timeToWait);
             state.willIgnite = true;
         }
         return state;
@@ -86,15 +77,15 @@ public:
     {
         if (state.ignited)
         {
-            return 1.0f;
+            return 1.0;
         }
-        else if (state.willIgnite || state.neighborWillIgnite)
+        else if (state.willIgnite)
         {
-            return state.timeToWait;
+            return std::max(state.ignitionTime - this->clock, 0.0);
         }
         else
         {
-            return 1.0f;
+            return 1.0;
         }
     }
 };

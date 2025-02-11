@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/capstone.exe",
             "args": [
-                "low_res/map.json",
+                "res/map.json",
                 "10000000"
             ],
             "cwd": "${workspaceFolder}",

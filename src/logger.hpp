@@ -6,11 +6,11 @@
 #include <utility>
 #include <cadmium/core/logger/logger.hpp>
 
-class TemporalLogger : public cadmium::Logger
+class Logger : public cadmium::Logger
 {
 public:
-    TemporalLogger(const std::string& filepath)
-        : Logger()
+    Logger(const std::string& filepath)
+        : cadmium::Logger()
         , filepath(filepath)
         , file() {}
 
