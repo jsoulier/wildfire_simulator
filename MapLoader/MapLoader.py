@@ -6,6 +6,10 @@ from PyQt5.QtCore import Qt
 from qgis.core import (
     QgsProject, QgsRasterLayer, QgsVectorLayer, QgsGeometry, QgsWkbTypes, QgsFeature, QgsProcessingFeedback
 )
+from qgis.core import (
+    QgsVectorLayerTemporalProperties,
+    QgsDataSourceUri,
+)
 from qgis.gui import QgsMapToolEmitPoint, QgsRubberBand
 from qgis.PyQt.QtGui import QColor
 import json
@@ -98,7 +102,7 @@ class MapLoaderDockWidget(QDockWidget):
         self.layout.addWidget(self.cadmium_button)
 
         self.cancel_cadmium_button = QPushButton("Cancel cadmium button")
-        self.cancel_cadmium_button.clicked.connect(self.cancel_cadmium_run)
+        self.cancel_cadmium_button.clicked.connect(self.end_cadmium_run)
         self.layout.addWidget(self.cancel_cadmium_button)
         self.cancel_cadmium_button.hide()
 
@@ -213,8 +217,27 @@ class MapLoaderDockWidget(QDockWidget):
         dump_json(maps, paths, width, height)
         print("JSON conversion completed.")
 
-    def on_cadmium_finish_running(self, map_csv):
-        pass
+    def on_cadmium_finish_running(self, csv):
+
+        uri = f"file:///{csv}?delimiter=,&xField=x&yField=y&crs=EPSG:2959"
+        layer = QgsVectorLayer(uri, "ignition", "delimitedtext")
+        if not layer.isValid():
+            print("Failed to load layer!")
+            return
+        QgsProject.instance().addMapLayer(layer)
+        props = layer.temporalProperties()
+        props.setIsActive(True)
+        props.setAccumulateFeatures(True)
+        props.setMode(QgsVectorLayerTemporalProperties.TemporalMode.ModeFeatureDateTimeInstantFromField)
+
+        # set field how?
+
+
+        # props.setTimeField('time')
+        # props.setTimeMode(QgsVectorLayerTemporalProperties.TimeMode.Single)
+        # props.setAccumulate(True)
+        # layer.triggerRepaint()
+        print("Temporal properties configured successfully!")
 
     def run_cadmium(self):
         if self.cadmium_proc:
@@ -227,17 +250,20 @@ class MapLoaderDockWidget(QDockWidget):
             self.cadmium_proc = subprocess.Popen([capstone, map_json, map_csv])
             self.cancel_cadmium_button.show()
             self.cadmium_proc.wait()
-            self.cadmium_proc = None
+            self.end_cadmium_run()
             self.on_cadmium_finish_running(map_csv)
             return
         self.cadmium_button.hide()
         thread = threading.Thread(target=callback)
         thread.start()
     
-    def cancel_cadmium_run(self):
+    def end_cadmium_run(self):
+        if not self.cadmium_proc:
+            return
         self.cancel_cadmium_button.hide()
         self.cadmium_proc.kill()
         self.cadmium_button.show()
+        self.cadmium_proc = None
 
 class RegionSelectionTool(QgsMapToolEmitPoint):
     def __init__(self, iface, plugin):
