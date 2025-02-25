@@ -14,6 +14,8 @@ import processing
 import rasterio
 import numpy
 import math
+import subprocess
+import threading
 
 #########################
 # PLUGIN CLASSES
@@ -91,6 +93,17 @@ class MapLoaderDockWidget(QDockWidget):
         self.convert_button.clicked.connect(self.convert_to_json)
         self.layout.addWidget(self.convert_button)
 
+        self.cadmium_button = QPushButton("Run cadmium")
+        self.cadmium_button.clicked.connect(self.run_cadmium)
+        self.layout.addWidget(self.cadmium_button)
+
+        self.cancel_cadmium_button = QPushButton("Cancel cadmium button")
+        self.cancel_cadmium_button.clicked.connect(self.cancel_cadmium_run)
+        self.layout.addWidget(self.cancel_cadmium_button)
+        self.cancel_cadmium_button.hide()
+
+        self.cadmium_proc = None
+
         container = QWidget()
         container.setLayout(self.layout)
         self.setWidget(container)
@@ -116,6 +129,7 @@ class MapLoaderDockWidget(QDockWidget):
         """Clear the current selection and rubber band."""
         self.plugin.selected_region = None
         self.plugin.rubber_band.reset()
+        self.plugin.rubber_band = None
         self.plugin.iface.mapCanvas().refresh()
         if self.plugin.map_tool:
             self.plugin.map_tool.points = []  # clear stored points
@@ -123,84 +137,107 @@ class MapLoaderDockWidget(QDockWidget):
 
     def convert_to_json(self):
         """Clip the selected GeoTIFFs to the drawn area, process them, and output JSON."""
+
         slope_layer = self.slope_selector.currentData()
         aspect_layer = self.aspect_selector.currentData()
         landcover_layer = self.landcover_selector.currentData()
 
-        if slope_layer and aspect_layer and landcover_layer and self.plugin.selected_region and self.plugin.selected_region.isGeosValid():
-            json_file_path, _ = QFileDialog.getSaveFileName(self, "Save JSON File", "", "JSON Files (*.json);;All Files (*)")
-            if not json_file_path:
-                print("No JSON file path provided.")
-                return
-            
-            # Create an in-memory mask layer from the drawn polygon
-            mask_layer = createTemporaryPolygonLayer(self.plugin.selected_region)
-            # Determine output file paths for the clipped rasters
-            clipped_aspect_path = os.path.splitext(json_file_path)[0] + "_aspect.tif"
-            clipped_slope_path = os.path.splitext(json_file_path)[0] + "_slope.tif"
-            clipped_land_path = os.path.splitext(json_file_path)[0] + "_landcover.tif"
+        if not slope_layer or not aspect_layer or not landcover_layer or not self.plugin.selected_region or not self.plugin.selected_region.isGeosValid():
+            raise Exception("No valid layers or selected region. Cannot convert to JSON.")
+        
+        # Create an in-memory mask layer from the drawn polygon
+        mask_layer = createTemporaryPolygonLayer(self.plugin.selected_region)
+        # Determine output file paths for the clipped rasters
+        json_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map.json")
+        clipped_aspect_path = os.path.splitext(json_file_path)[0] + "_aspect.tif"
+        clipped_slope_path = os.path.splitext(json_file_path)[0] + "_slope.tif"
+        clipped_land_path = os.path.splitext(json_file_path)[0] + "_landcover.tif"
 
-            # Use the GDAL Clip algorithm to clip the rasters using the mask
-            params_aspect = {
-                "INPUT": aspect_layer.source(),
-                "MASK": mask_layer,
-                "CROP_TO_CUTLINE": True,
-                "OUTPUT": clipped_aspect_path
-            }
-            params_slope = {
-                "INPUT": slope_layer.source(),
-                "MASK": mask_layer,
-                "CROP_TO_CUTLINE": True,
-                "OUTPUT": clipped_slope_path
-            }
-            params_land = {
-                "INPUT": landcover_layer.source(),
-                "MASK": mask_layer,
-                "CROP_TO_CUTLINE": True,
-                "OUTPUT": clipped_land_path
-            }
+        # Use the GDAL Clip algorithm to clip the rasters using the mask
+        params_aspect = {
+            "INPUT": aspect_layer.source(),
+            "MASK": mask_layer,
+            "CROP_TO_CUTLINE": True,
+            "OUTPUT": clipped_aspect_path
+        }
+        params_slope = {
+            "INPUT": slope_layer.source(),
+            "MASK": mask_layer,
+            "CROP_TO_CUTLINE": True,
+            "OUTPUT": clipped_slope_path
+        }
+        params_land = {
+            "INPUT": landcover_layer.source(),
+            "MASK": mask_layer,
+            "CROP_TO_CUTLINE": True,
+            "OUTPUT": clipped_land_path
+        }
 
-            processing.run("gdal:cliprasterbymasklayer", params_aspect)
-            processing.run("gdal:cliprasterbymasklayer", params_slope)
-            processing.run("gdal:cliprasterbymasklayer", params_land)
+        processing.run("gdal:cliprasterbymasklayer", params_aspect)
+        processing.run("gdal:cliprasterbymasklayer", params_slope)
+        processing.run("gdal:cliprasterbymasklayer", params_land)
 
-            # Prepare paths for further processing:
-            paths = {
-                "aspect": clipped_aspect_path,
-                "slope": clipped_slope_path,
-                "land": clipped_land_path,
-                "json": json_file_path,
-            }
+        # Prepare paths for further processing:
+        paths = {
+            "aspect": clipped_aspect_path,
+            "slope": clipped_slope_path,
+            "land": clipped_land_path,
+            "json": json_file_path,
+        }
 
-            # # Run processing to generate slope and aspect rasters from the clipped elevation
-            # feedback = QgsProcessingFeedback()
-            # try:
-            #     processing.run("qgis:slope", {
-            #         "INPUT": paths["elevation"],
-            #         "Z_FACTOR": 1.0,
-            #         "OUTPUT": paths["slope"]
-            #     }, feedback=feedback)
-            #     processing.run("qgis:aspect", {
-            #         "INPUT": paths["elevation"],
-            #         "Z_FACTOR": 1.0,
-            #         "OUTPUT": paths["aspect"]
-            #     }, feedback=feedback)
-            # except Exception as e:
-            #     print(f"Error generating slope or aspect: {e}")
-            #     return
+        # # Run processing to generate slope and aspect rasters from the clipped elevation
+        # feedback = QgsProcessingFeedback()
+        # try:
+        #     processing.run("qgis:slope", {
+        #         "INPUT": paths["elevation"],
+        #         "Z_FACTOR": 1.0,
+        #         "OUTPUT": paths["slope"]
+        #     }, feedback=feedback)
+        #     processing.run("qgis:aspect", {
+        #         "INPUT": paths["elevation"],
+        #         "Z_FACTOR": 1.0,
+        #         "OUTPUT": paths["aspect"]
+        #     }, feedback=feedback)
+        # except Exception as e:
+        #     print(f"Error generating slope or aspect: {e}")
+        #     return
 
-            maps = {
-                "slope": get_raw_maps(paths["slope"]),
-                "aspect": get_raw_maps(paths["aspect"]),
-                "land": get_raw_maps(paths["land"])
-            }
+        maps = {
+            "slope": get_raw_maps(paths["slope"]),
+            "aspect": get_raw_maps(paths["aspect"]),
+            "land": get_raw_maps(paths["land"])
+        }
 
-            width = min(maps["slope"].width, maps["aspect"].width, maps["land"].width)
-            height = min(maps["slope"].height, maps["aspect"].height, maps["land"].height)
-            dump_json(maps, paths, width, height)
-            print("JSON conversion completed.")
-        else:
-            print("No valid layers or selected region. Cannot convert to JSON.")
+        width = min(maps["slope"].width, maps["aspect"].width, maps["land"].width)
+        height = min(maps["slope"].height, maps["aspect"].height, maps["land"].height)
+        dump_json(maps, paths, width, height)
+        print("JSON conversion completed.")
+
+    def on_cadmium_finish_running(self, map_csv):
+        pass
+
+    def run_cadmium(self):
+        if self.cadmium_proc:
+            return
+        root = os.path.dirname(os.path.abspath(__file__))
+        capstone = os.path.join(root, "capstone.exe")
+        map_json = os.path.join(root, "map.json")
+        map_csv = os.path.join(root, "ignition.csv")
+        def callback():
+            self.cadmium_proc = subprocess.Popen([capstone, map_json, map_csv])
+            self.cancel_cadmium_button.show()
+            self.cadmium_proc.wait()
+            self.cadmium_proc = None
+            self.on_cadmium_finish_running(map_csv)
+            return
+        self.cadmium_button.hide()
+        thread = threading.Thread(target=callback)
+        thread.start()
+    
+    def cancel_cadmium_run(self):
+        self.cancel_cadmium_button.hide()
+        self.cadmium_proc.kill()
+        self.cadmium_button.show()
 
 class RegionSelectionTool(QgsMapToolEmitPoint):
     def __init__(self, iface, plugin):

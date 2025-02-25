@@ -18,17 +18,16 @@ int main(int argc, char** argv)
 {
     if (argc < 2)
     {
-        std::cout << "Program used with wrong parameters. The program must be invoked as follows:";
-        std::cout << argv[0] << " SCENARIO_CONFIG.json MAX_SIMULATION_TIME" << std::endl;
+        std::cout << "Missing source json and destination csv" << std::endl;
         return 1;
     }
     auto model = std::make_shared<cadmium::celldevs::AsymmCellDEVSCoupled<State, double>>("behave", addCell, argv[1]);
     model->buildModel();
     auto coordinator = cadmium::RootCoordinator(model);
-    auto logger = std::make_shared<Logger>("ignition.csv");
+    auto logger = std::make_shared<Logger>(argv[2]);
     coordinator.setLogger(logger);
     coordinator.start();
-    coordinator.simulate(std::stod(argv[2]));
+    coordinator.simulate(10000000.0);
     coordinator.stop();
     return 0;
 }

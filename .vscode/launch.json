@@ -8,7 +8,7 @@
             "program": "${workspaceFolder}/build/bin/capstone.exe",
             "args": [
                 "res/map.json",
-                "10000000"
+                "ignition.csv"
             ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "CMake: build",
