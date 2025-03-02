@@ -15,7 +15,6 @@ The widlfire simulator requires several dependencies:
 - C++ compiler
 - CMake
 - QGIS
-- Python (not required since it comes with QGIS)
 
 For detailed instructions on installing these dependencies, please navigate to the platform-specific installation section.
 
