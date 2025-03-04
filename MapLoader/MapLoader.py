@@ -21,6 +21,8 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsMessageLog,
+    Qgis,
+    QgsTemporalNavigationObject,
 )
 from qgis.gui import QgsMapToolIdentifyFeature
 from qgis.gui import QgsMapToolEmitPoint, QgsRubberBand
@@ -249,29 +251,7 @@ class MapLoaderDockWidget(QDockWidget):
         print("JSON conversion completed.")
 
     def on_cadmium_finish_running(self, csv_path):
-
-        QgsMessageLog.logMessage("converting csv", "MapLoader")
-
-        # Dumb hack for QGIS not supporting fixed-times properly
-        with open(csv_path, mode='r') as file:
-            reader = csv.reader(file)
-            rows = list(reader)
-        QgsMessageLog.logMessage(f"read csv: {len(rows)}", "MapLoader")
-        last_time = rows[-1][0]
-        modified_rows = []
-        for i, row in enumerate(rows):
-            if i == 0:
-                modified_rows.append(["startTime","x","y","ignited","endTime"])
-            else:
-                modified_rows.append(row + [last_time])
-        QgsMessageLog.logMessage("modified rows", "MapLoader")
-        with open(csv_path, mode='w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerows(modified_rows)
-
-        QgsMessageLog.logMessage("done converting csv", "MapLoader")
-
-        uri = f"file:///{csv_path}?delimiter=,&xField=x&yField=y&startTimeField=startTime&crs=EPSG:2959"
+        uri = f"file:///{csv_path}?delimiter=,&xField=x&yField=y&crs=EPSG:2959"
         layer = QgsVectorLayer(uri, "ignition", "delimitedtext")
         if not layer.isValid():
             print("Failed to load layer!")
@@ -280,16 +260,8 @@ class MapLoaderDockWidget(QDockWidget):
         props = layer.temporalProperties()
         props.setIsActive(True)
         props.setAccumulateFeatures(True)
-        # QgsMessageLog.logMessage(f"testing: {dir(QgsVectorLayerTemporalProperties.TemporalMode)}", "MapLoader")
         props.setMode(QgsVectorLayerTemporalProperties.TemporalMode.ModeFeatureDateTimeInstantFromField)
-        props.setStartField("startTime")
-
-
-        # props.setTimeField('time')
-        # props.setTimeMode(QgsVectorLayerTemporalProperties.TimeMode.Single)
-        # props.setAccumulate(True)
-        # layer.triggerRepaint()
-        print("Temporal properties configured successfully!")
+        props.setStartField("time")
 
     def run_cadmium(self):
         if self.cadmium_proc:
@@ -299,21 +271,11 @@ class MapLoaderDockWidget(QDockWidget):
         map_json = os.path.join(root, "map.json")
         map_csv = os.path.join(root, "ignition.csv")
         def callback():
-            import sys
-            log_file = open(os.path.join(root, "log.txt"), "w");
-            sys.stdout = log_file
-            QgsMessageLog.logMessage("popen", "MapLoader")
             self.cadmium_proc = subprocess.Popen([capstone, map_json, map_csv])
-            QgsMessageLog.logMessage("show", "MapLoader")
             self.cancel_cadmium_button.show()
-            QgsMessageLog.logMessage("wait", "MapLoader")
             self.cadmium_proc.wait()
-            QgsMessageLog.logMessage("run", "MapLoader")
             self.end_cadmium_run()
-            QgsMessageLog.logMessage("on finish running", "MapLoader")
             self.on_cadmium_finish_running(map_csv)
-            QgsMessageLog.logMessage("finished", "MapLoader")
-            log_file.close()
             return
         self.cadmium_button.hide()
         thread = threading.Thread(target=callback)
