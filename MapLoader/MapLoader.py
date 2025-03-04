@@ -4,12 +4,25 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 from qgis.core import (
-    QgsProject, QgsRasterLayer, QgsVectorLayer, QgsGeometry, QgsWkbTypes, QgsFeature, QgsProcessingFeedback
-)
-from qgis.core import (
+    QgsProject,
+    QgsRasterLayer,
+    QgsVectorLayer,
+    QgsGeometry,
+    QgsWkbTypes,
+    QgsFeature,
+    QgsProcessingFeedback,
     QgsVectorLayerTemporalProperties,
     QgsDataSourceUri,
+    QgsVectorLayer,
+    QgsFeature,
+    QgsGeometry,
+    QgsPointXY,
+    QgsProject,
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsMessageLog,
 )
+from qgis.gui import QgsMapToolIdentifyFeature
 from qgis.gui import QgsMapToolEmitPoint, QgsRubberBand
 from qgis.PyQt.QtGui import QColor
 import json
@@ -45,21 +58,27 @@ class MapLoaderPlugin:
         if not self.dock_widget:
             self.dock_widget = MapLoaderDockWidget(self)
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dock_widget)
-        
-        if self.rubber_band is None:
-            self.rubber_band = QgsRubberBand(self.iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
-
         self.dock_widget.show()
-
-        # Set up map selection tool and pass the plugin to it.
-        self.map_tool = RegionSelectionTool(self.iface, self)
-        self.iface.mapCanvas().setMapTool(self.map_tool)
 
 class MapLoaderDockWidget(QDockWidget):
     def __init__(self, plugin):
         super(MapLoaderDockWidget, self).__init__(plugin.iface.mainWindow())
         self.plugin = plugin
         self.setWindowTitle("Map Loader")
+        self.iface = plugin.iface
+
+        self.plugin.rubber_band = QgsRubberBand(self.plugin.iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
+        self.plugin.rubber_band.setColor(QColor(Qt.green))
+        self.plugin.rubber_band.setWidth(2)
+
+        self.plugin.fire_origin_rubber_band = QgsRubberBand(self.plugin.iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
+        self.plugin.fire_origin_rubber_band.setColor(QColor(Qt.red))
+        self.plugin.fire_origin_rubber_band.setWidth(2)
+
+        # Set up map selection tool and pass the plugin to it.
+        self.map_tool = RegionSelectionTool(self.iface, self, self.plugin.rubber_band)
+        self.fire_origin_map_tool = RegionSelectionTool(self.iface, self, self.plugin.fire_origin_rubber_band)
+        # self.iface.mapCanvas().setMapTool(self.map_tool)
 
         self.layout = QVBoxLayout()
 
@@ -85,9 +104,13 @@ class MapLoaderDockWidget(QDockWidget):
         self.layout.addWidget(self.landcover_selector)
 
         # --- Buttons ---
-        self.select_button = QPushButton("Select Area")
+        self.select_button = QPushButton("Select Simulation Area")
         self.select_button.clicked.connect(self.activate_selection)
         self.layout.addWidget(self.select_button)
+
+        self.fire_origin_button = QPushButton("Select Fire Origin Area")
+        self.fire_origin_button.clicked.connect(self.activate_fire_origin_selection)
+        self.layout.addWidget(self.fire_origin_button)
 
         self.clear_button = QPushButton("Clear Selected Area")
         self.clear_button.clicked.connect(self.clear_selection)
@@ -101,7 +124,7 @@ class MapLoaderDockWidget(QDockWidget):
         self.cadmium_button.clicked.connect(self.run_cadmium)
         self.layout.addWidget(self.cadmium_button)
 
-        self.cancel_cadmium_button = QPushButton("Cancel cadmium button")
+        self.cancel_cadmium_button = QPushButton("Cancel cadmium")
         self.cancel_cadmium_button.clicked.connect(self.end_cadmium_run)
         self.layout.addWidget(self.cancel_cadmium_button)
         self.cancel_cadmium_button.hide()
@@ -124,19 +147,26 @@ class MapLoaderDockWidget(QDockWidget):
 
     def activate_selection(self):
         """Activate the polygon selection tool."""
-        self.plugin.rubber_band = QgsRubberBand(self.plugin.iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
-        self.plugin.rubber_band.setColor(QColor(Qt.green))
-        self.plugin.rubber_band.setWidth(2)
-        self.plugin.iface.mapCanvas().setMapTool(self.plugin.map_tool)
+        self.plugin.iface.mapCanvas().setMapTool(self.map_tool)
+
+    def activate_fire_origin_selection(self):
+        self.plugin.iface.mapCanvas().setMapTool(self.fire_origin_map_tool)
 
     def clear_selection(self):
         """Clear the current selection and rubber band."""
-        self.plugin.selected_region = None
-        self.plugin.rubber_band.reset()
-        self.plugin.rubber_band = None
-        self.plugin.iface.mapCanvas().refresh()
-        if self.plugin.map_tool:
-            self.plugin.map_tool.points = []  # clear stored points
+        if self.plugin.rubber_band:
+            self.plugin.selected_region = None
+            self.plugin.rubber_band.reset()
+            self.plugin.rubber_band = None
+            self.plugin.iface.mapCanvas().refresh()
+        if self.plugin.fire_origin_rubber_band:
+            self.plugin.selected_region = None
+            self.plugin.fire_origin_rubber_band.reset()
+            self.plugin.fire_origin_rubber_band = None
+            self.plugin.iface.mapCanvas().refresh()
+        self.map_tool.points = []
+        self.fire_origin_map_tool.points = []
+        self.plugin.iface.mapCanvas().setMapTool(None)
         print("Selection cleared!")
 
     def convert_to_json(self):
@@ -266,10 +296,11 @@ class MapLoaderDockWidget(QDockWidget):
         self.cadmium_proc = None
 
 class RegionSelectionTool(QgsMapToolEmitPoint):
-    def __init__(self, iface, plugin):
+    def __init__(self, iface, plugin, rubber_band):
         super(RegionSelectionTool, self).__init__(iface.mapCanvas())
         self.points = []  # List to store clicked QgsPointXY objects
         self.plugin = plugin
+        self.rubber_band = rubber_band
 
     def canvasPressEvent(self, event):
         point = self.toMapCoordinates(event.pos())
@@ -293,14 +324,12 @@ class RegionSelectionTool(QgsMapToolEmitPoint):
 
     def highlight_region(self):
         if self.plugin.selected_region:
-            self.plugin.rubber_band.reset()
+            self.rubber_band.reset()
             for p in self.points:
-                self.plugin.rubber_band.addPoint(p)
-            self.plugin.rubber_band.setColor(QColor(Qt.green))
-            self.plugin.rubber_band.setWidth(2)
+                self.rubber_band.addPoint(p)
 
     def clear_highlight(self):
-        self.plugin.rubber_band.reset()
+        self.plugin.reset()
         self.plugin.iface.mapCanvas().refresh()
 
 #########################
