@@ -11,7 +11,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${BINARY_DIR})
 make_directory(${BINARY_DIR})
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/behave)
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib/cadmium)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/cadmium_v2)
 add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/main.cpp)
 target_link_libraries(${PROJECT_NAME} cadmium behave)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
