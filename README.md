@@ -69,7 +69,7 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtens
 
 ![](doc/11210.png)
 
-11. To verify your installation, open any shell and type "cmake". You should see something like the following
+11. To verify your installation, open a new shell and type "cmake". You should see something like the following
 
 ![](doc/11211.png)
 
