@@ -154,7 +154,7 @@ drwxr-xr-x 1 jaans 197610       0 Mar  8 14:24 doc/
 -rw-r--r-- 1 jaans 197610    3776 Mar  8 14:28 README.md
 ```
 
-Proceed with the [basic](#21-basic-setup) and/or [advanced](#22-advanced-setup).
+Proceed with the [basic](#21-basic-setup) and/or [advanced](#22-advanced-setup) setup.
 
 ### 2.1 Basic Setup
 
