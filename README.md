@@ -154,6 +154,8 @@ Proceed with the [basic](#21-basic-setup) and/or [advanced](#22-advanced-setup).
 
 ### 2.1 Basic Setup
 
+> TODO:
+
 ### 2.2 Advanced Setup
 
 Navigate to the advanced directory
