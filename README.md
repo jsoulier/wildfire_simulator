@@ -7,6 +7,10 @@ Table of Contents
         2. [Visual Studio](#112-visual-studio)
         3. [QGIS (Advanced Setup)](#113-qgis-advanced-setup)
     2. [Linux](#12-linux)
+2. [Wildfire Simulator](#2-wildfire-simulator)
+    1. [Basic Setup](#21-basic-setup)
+    2. [Advanced Setup](#22-advanced-setup)
+    3. [VSCode](#23-vscode)
 
 ## 1. Installation Instructions
 
@@ -75,8 +79,64 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtens
 
 #### 1.1.3 QGIS (Advanced Setup)
 
+1. Navigate to the following link and click "Skip it and go to download": https://qgis.org/download/
+
+![](doc/1131.png)
+
+2. Press "Long Term Version for Windows (3.40 LTR)"
+
+![](doc/1132.png)
+
+3. When the download finishes, run the installer and press "Next"
+
+![](doc/1133.png)
+
+4. Check "I accept the terms in the License Agreement" and press "Next"
+
+![](doc/1134.png)
+
+5. Press "Next"
+
+![](doc/1135.png)
+
+6. Press "Install"
+
+![](doc/1136.png)
+
+7. Press on the administrative access icon and press "Yes"
+
+![](doc/1137.png)
+
+7. Press "Finish"
+
+![](doc/1138.png)
+
+9. To verify your installation, type in "QGIS" the Windows search. You should see something like the following
+
+![](doc/1139.png)
+
 ### 1.2 Linux
 
-Todo
+> TODO: Will just be apt/dnf install git cmake g++
 
-### Wildfire Simulator
+> TODO: Might still need manual QGIS installation to ensure 3.40
+
+### 2. Wildfire Simulator
+
+> NOTE: If you haven't completed the installation steps, the following will likely not work
+
+Run the following command in a shell to download the simulator to the directory of your choosing:
+
+```
+git clone https://github.com/jsoulier/wildfire_simulator --recurse-submodules
+```
+
+#### 2.1 Basic Setup
+
+#### 2.2 Advanced Setup
+
+#### 2.3 VSCode
+
+For instructions on installing VSCode, see the [Cadmium Installation Manual](cadmium_installation_manual.pdf)
+
+> TODO: Show how it can be easier to build through VSCode and CMake Tools

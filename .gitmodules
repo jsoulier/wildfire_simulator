@@ -1,6 +1,9 @@
 [submodule "lib/behave"]
-	path = lib/behave
+	path = advanced/lib/behave
 	url = https://github.com/jsoulier/behave
 [submodule "lib/cadmium_v2"]
-	path = lib/cadmium_v2
+	path = advanced/lib/cadmium_v2
+	url = https://github.com/jsoulier/cadmium_v2
+[submodule "basic/lib/cadmium_v2"]
+	path = basic/lib/cadmium_v2
 	url = https://github.com/jsoulier/cadmium_v2

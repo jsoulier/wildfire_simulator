@@ -1,6 +1,8 @@
 {
     "cmake.parallelJobs": 8,
-    "files.associations": {
-        "memory": "cpp"
-    }
+    "cmake.buildDirectory": "${command:cmake.activeFolderPath}/build",
+    "cmake.sourceDirectory": [
+        "${workspaceFolder}/advanced",
+        "${workspaceFolder}/basic"
+    ],
 }

@@ -1,5 +1,5 @@
 [general]
-name=MapLoader
+name=Wildfire Simulator
 description=Load and convert map files to JSON, then execute simulation.
 version=0.1
 qgisMinimumVersion=3.34.15

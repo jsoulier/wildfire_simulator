@@ -41,7 +41,7 @@ import csv
 # PLUGIN CLASSES
 #########################
 
-class MapLoaderPlugin:
+class WFSPlugin:
     def __init__(self, iface):
         self.iface = iface
         self.dock_widget = None
@@ -50,7 +50,7 @@ class MapLoaderPlugin:
         self.selected_region = None
 
     def initGui(self):
-        self.action = QAction('Map Loader', self.iface.mainWindow())
+        self.action = QAction('Wildfire Simulator', self.iface.mainWindow())
         self.action.triggered.connect(self.run)
         self.iface.addToolBarIcon(self.action)
 
@@ -59,15 +59,15 @@ class MapLoaderPlugin:
 
     def run(self):
         if not self.dock_widget:
-            self.dock_widget = MapLoaderDockWidget(self)
+            self.dock_widget = WFSDockWidget(self)
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dock_widget)
         self.dock_widget.show()
 
-class MapLoaderDockWidget(QDockWidget):
+class WFSDockWidget(QDockWidget):
     def __init__(self, plugin):
-        super(MapLoaderDockWidget, self).__init__(plugin.iface.mainWindow())
+        super(WFSDockWidget, self).__init__(plugin.iface.mainWindow())
         self.plugin = plugin
-        self.setWindowTitle("Map Loader")
+        self.setWindowTitle("Wildfire Simulator")
         self.iface = plugin.iface
 
         self.plugin.rubber_band = QgsRubberBand(self.plugin.iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
