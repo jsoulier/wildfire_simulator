@@ -10,6 +10,7 @@ Table of Contents
 2. [Building the Wildfire Simulator](#2-building-the-wildfire-simulator)
     1. [Basic Setup](#21-basic-setup)
     2. [Advanced Setup](#22-advanced-setup)
+        1. [CMake Options](#221-cmake-options)
     3. [VSCode](#23-vscode)
 3. [Using the Wildfire Simulator](#3-using-the-wildfire-simulator)
     1. [Basic Usage](#31-basic-usage)
@@ -190,7 +191,7 @@ total 12116
 -rw-r--r-- 1 jaans 197610 10948608 Mar  8 14:36 wildfire_simulator.pdb
 ```
 
-#### 2.2.3 CMake Options
+#### 2.2.1 CMake Options
 
 For better performance, you may want to produce a release mode build (with `-O3`).
 With single-config generators (Makefiles, Ninja), use the following commands instead.
