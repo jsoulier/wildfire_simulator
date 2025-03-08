@@ -7,7 +7,7 @@ Table of Contents
         2. [Visual Studio](#112-visual-studio)
         3. [QGIS (Advanced Setup)](#113-qgis-advanced-setup)
     2. [Linux](#12-linux)
-2. [Wildfire Simulator](#2-wildfire-simulator)
+2. [Building the Wildfire Simulator](#2-building-the-wildfire-simulator)
     1. [Basic Setup](#21-basic-setup)
     2. [Advanced Setup](#22-advanced-setup)
     3. [VSCode](#23-vscode)
@@ -121,21 +121,95 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtens
 
 > TODO: Might still need manual QGIS installation to ensure 3.40
 
-### 2. Wildfire Simulator
+## 2. Building the Wildfire Simulator
 
-> NOTE: If you haven't completed the installation steps, the following will likely not work
-
-Run the following command in a shell to download the simulator to the directory of your choosing:
+Open a Powershell or Bash instance.
+Download the simulator to the directory of your choosing:
 
 ```
 git clone https://github.com/jsoulier/wildfire_simulator --recurse-submodules
 ```
 
-#### 2.1 Basic Setup
+Navigate to the newly cloned directory
 
-#### 2.2 Advanced Setup
+```
+cd wildfire_simulator
+```
 
-#### 2.3 VSCode
+You should see the following files:
+
+```pwsh
+$ ls -l
+total 6008
+drwxr-xr-x 1 jaans 197610       0 Mar  8 14:24 advanced/
+drwxr-xr-x 1 jaans 197610       0 Mar  8 14:24 basic/
+-rw-r--r-- 1 jaans 197610 5006260 Mar  8 14:24 cadmium_installation_manual.pdf
+drwxr-xr-x 1 jaans 197610       0 Mar  8 14:24 doc/
+-rw-r--r-- 1 jaans 197610 1045733 Mar  8 14:24 elevation_specification.pdf
+-rw-r--r-- 1 jaans 197610   85387 Mar  8 14:24 land_specification.pdf
+-rw-r--r-- 1 jaans 197610    3776 Mar  8 14:28 README.md
+```
+
+Proceed with the [basic](#21-basic-setup) and/or [advanced](#22-advanced-setup).
+
+### 2.1 Basic Setup
+
+### 2.2 Advanced Setup
+
+Navigate to the advanced directory
+
+```pwsh
+cd advanced
+```
+
+Create to folder to build from and enter that folder
+
+```pwsh
+mkdir build
+cd build
+```
+
+Run the CMake generator and invoke the build
+
+```pwsh
+cmake ..
+cmake --build .
+```
+
+You should now see the following files under `bin/`
+
+```pwsh
+$ ls -l bin
+total 12116
+-rwxr-xr-x 1 jaans 197610  1455616 Mar  8 14:36 wildfire_simulator.exe*
+-rw-r--r-- 1 jaans 197610 10948608 Mar  8 14:36 wildfire_simulator.pdb
+```
+
+#### 2.2.3 CMake Options
+
+For better performance, you may want to produce a release mode build (with `-O3`).
+With single-config generators (Makefiles, Ninja), use the following commands instead.
+
+```pwsh
+cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake --build .
+```
+
+With multi-config generators (Visual Studio, XCode), use the following commands instead.
+
+```pwsh
+cmake ..
+cmake --build . --config Release
+```
+
+For faster build times, you can run a CMake build across multiple threads.
+You can do this with the following option (and replace 8 with your desired number of threads).
+
+```pwsh
+cmake --build . --parallel 8
+```
+
+### 2.3 VSCode
 
 For instructions on installing VSCode, see the [Cadmium Installation Manual](cadmium_installation_manual.pdf)
 
