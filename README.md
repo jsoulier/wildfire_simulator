@@ -1,4 +1,4 @@
-# Wildfire Simulator using Cadmium V2, Behave and QGIS
+# Wildfire Simulator
 
 Table of Contents
 1. [Installation Intructions](#1-installation-instructions)
@@ -11,6 +11,9 @@ Table of Contents
     1. [Basic Setup](#21-basic-setup)
     2. [Advanced Setup](#22-advanced-setup)
     3. [VSCode](#23-vscode)
+3. [Using the Wildfire Simulator](#3-using-the-wildfire-simulator)
+    1. [Basic Usage](#31-basic-usage)
+    2. [Advanced Usage](#32-advanced-usage)
 
 ## 1. Installation Instructions
 
@@ -216,3 +219,9 @@ cmake --build . --parallel 8
 For instructions on installing VSCode, see the [Cadmium Installation Manual](cadmium_installation_manual.pdf)
 
 > TODO: Show how it can be easier to build through VSCode and CMake Tools
+
+## 3. Using the Wildfire Simulator
+
+### 3.1 Basic Usage
+
+### 3.2 Advanced Usage
