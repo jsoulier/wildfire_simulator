@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (
     QLabel, QVBoxLayout, QComboBox, QPushButton, QWidget, QDockWidget,
-    QFileDialog, QAction
+    QFileDialog, QAction, QSlider
 )
 from PyQt5.QtCore import Qt
 from qgis.core import (
@@ -73,6 +73,7 @@ class WFSPlugin:
         self.map_tool = None
         self.rubber_band = None
         self.selected_region = None
+        self.ignited_region = None
 
     def initGui(self):
         self.action = QAction('Wildfire Simulator', self.iface.mainWindow())
@@ -95,6 +96,11 @@ class WFSDockWidget(QDockWidget):
         self.setWindowTitle("Wildfire Simulator")
         self.iface = plugin.iface
 
+        # Initialize wind speed and direction with default values
+        self.wind_speed = WIND_SPEED  # Default wind speed
+        self.wind_direction = WIND_DIRECTION  # Default wind direction
+
+        # Set up rubber bands
         self.plugin.rubber_band = QgsRubberBand(self.plugin.iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
         self.plugin.rubber_band.setColor(QColor(Qt.green))
         self.plugin.rubber_band.setWidth(2)
@@ -103,12 +109,33 @@ class WFSDockWidget(QDockWidget):
         self.plugin.fire_origin_rubber_band.setColor(QColor(Qt.red))
         self.plugin.fire_origin_rubber_band.setWidth(2)
 
-        # Set up map selection tool and pass the plugin to it.
-        self.map_tool = RegionSelectionTool(self.iface, self, self.plugin.rubber_band)
-        self.fire_origin_map_tool = RegionSelectionTool(self.iface, self, self.plugin.fire_origin_rubber_band)
-        # self.iface.mapCanvas().setMapTool(self.map_tool)
+        # Set up map selection tools
+        self.map_tool = RegionSelectionTool(self.iface, self, self.plugin.rubber_band, is_ignited_region=False)
+        self.fire_origin_map_tool = RegionSelectionTool(self.iface, self, self.plugin.fire_origin_rubber_band, is_ignited_region=True)
 
         self.layout = QVBoxLayout()
+
+        # --- Wind Speed Slider ---
+        self.wind_speed_label = QLabel(f"Wind Speed: {self.wind_speed} km/h")
+        self.layout.addWidget(self.wind_speed_label)
+
+        self.wind_speed_slider = QSlider(Qt.Horizontal)
+        self.wind_speed_slider.setMinimum(0)  # Minimum wind speed
+        self.wind_speed_slider.setMaximum(100)  # Maximum wind speed
+        self.wind_speed_slider.setValue(self.wind_speed)  # Default value
+        self.wind_speed_slider.valueChanged.connect(self.update_wind_speed)
+        self.layout.addWidget(self.wind_speed_slider)
+
+        # --- Wind Direction Slider ---
+        self.wind_direction_label = QLabel(f"Wind Direction: {self.wind_direction}°")
+        self.layout.addWidget(self.wind_direction_label)
+
+        self.wind_direction_slider = QSlider(Qt.Horizontal)
+        self.wind_direction_slider.setMinimum(0)  # Minimum wind direction (0°)
+        self.wind_direction_slider.setMaximum(360)  # Maximum wind direction (360°)
+        self.wind_direction_slider.setValue(self.wind_direction)  # Default value
+        self.wind_direction_slider.valueChanged.connect(self.update_wind_direction)
+        self.layout.addWidget(self.wind_direction_slider)
 
         # --- Slope layer dropdown ---
         self.slope_label = QLabel("Select Slope Layer:")
@@ -142,6 +169,7 @@ class WFSDockWidget(QDockWidget):
 
         self.fire_origin_button = QPushButton("Select Fire Origin Area")
         self.fire_origin_button.clicked.connect(self.activate_fire_origin_selection)
+        self.fire_origin_button.setEnabled(False)  # Disabled by default
         self.layout.addWidget(self.fire_origin_button)
 
         self.clear_button = QPushButton("Clear Selected Area")
@@ -177,21 +205,42 @@ class WFSDockWidget(QDockWidget):
                 if ds.endswith('.tif') or ds.endswith('.tiff'):
                     selector.addItem(layer.name(), layer)
 
+    def update_wind_speed(self, value):
+        """Update the wind speed when the slider is moved."""
+        self.wind_speed = value
+        self.wind_speed_label.setText(f"Wind Speed: {self.wind_speed} km/h")
+        print(f"Wind speed updated to: {self.wind_speed} km/h")
+
+    def update_wind_direction(self, value):
+        """Update the wind direction when the slider is moved."""
+        self.wind_direction = value
+        self.wind_direction_label.setText(f"Wind Direction: {self.wind_direction}°")
+        print(f"Wind direction updated to: {self.wind_direction}°")
+
     def activate_selection(self):
         """Activate the polygon drawing tool."""
         self.plugin.iface.mapCanvas().setMapTool(self.map_tool)
         print("Draw tool activated. Draw a polygon on the map.")
 
     def activate_fire_origin_selection(self):
-        self.plugin.iface.mapCanvas().setMapTool(self.fire_origin_map_tool)
+        """Activate the fire origin selection tool."""
+        if self.plugin.selected_region:
+            self.plugin.iface.mapCanvas().setMapTool(self.fire_origin_map_tool)
+            print("Fire origin drawing tool activated. Draw a polygon within the selected region.")
+        else:
+            print("No selected region. Please draw a selected region first.")
 
     def confirm_drawn_area(self):
         """Confirm the drawn polygon and set it as the selected region."""
         if self.map_tool.points:
             self.plugin.selected_region = QgsGeometry.fromPolygonXY([self.map_tool.points])
             print("Selected region confirmed.")
+            # Enable the fire origin button since a selected region exists
+            self.fire_origin_button.setEnabled(True)
         else:
             print("No polygon drawn. Please draw a polygon first.")
+            # Disable the fire origin button if no selected region exists
+            self.fire_origin_button.setEnabled(False)
 
     def clear_selection(self):
         """Clear the current selection and rubber band."""
@@ -201,14 +250,15 @@ class WFSDockWidget(QDockWidget):
             self.plugin.rubber_band = None
             self.plugin.iface.mapCanvas().refresh()
         if self.plugin.fire_origin_rubber_band:
-            self.plugin.selected_region = None
+            self.plugin.ignited_region = None
             self.plugin.fire_origin_rubber_band.reset()
             self.plugin.fire_origin_rubber_band = None
             self.plugin.iface.mapCanvas().refresh()
         self.map_tool.points = []
         self.fire_origin_map_tool.points = []
         self.plugin.iface.mapCanvas().setMapTool(None)
-        print("Selection cleared!")
+        self.fire_origin_button.setEnabled(False)
+    print("Selection cleared!")
 
 
     def convert_to_json(self):
@@ -295,7 +345,7 @@ class WFSDockWidget(QDockWidget):
 
                 paths["land"] = resampled_land_path
 
-            dump_json(paths)
+            dump_json(paths, self)
             print("JSON conversion completed.")
         else:
             print("No valid layers or selected region. Cannot convert to JSON.")
@@ -340,21 +390,32 @@ class WFSDockWidget(QDockWidget):
         self.cadmium_proc = None
 
 class RegionSelectionTool(QgsMapToolEmitPoint):
-    def __init__(self, iface, plugin, rubber_band):
+    def __init__(self, iface, plugin, rubber_band, is_ignited_region=False):
         super(RegionSelectionTool, self).__init__(iface.mapCanvas())
         self.points = []  # List to store clicked QgsPointXY objects
         self.plugin = plugin
         self.rubber_band = rubber_band
+        self.is_ignited_region = is_ignited_region  # Flag to indicate if this is for the ignited region
 
     def canvasPressEvent(self, event):
         point = self.toMapCoordinates(event.pos())
-        
+
+        # If this is for the ignited region, enforce the selected region constraint
+        if self.is_ignited_region:
+            if not self.plugin.selected_region or not self.plugin.selected_region.contains(point):
+                print("Point is outside the selected region. Ignoring.")
+                return
+
+        # Automatically close the polygon if the user clicks near the first point
         if len(self.points) > 2 and self.is_near_first_point(point):
-            # Automatically close the polygon
             self.points.append(self.points[0])
-            self.plugin.selected_region = QgsGeometry.fromPolygonXY([self.points])
+            if self.is_ignited_region:
+                self.plugin.ignited_region = QgsGeometry.fromPolygonXY([self.points])
+                print("Polygon closed and ignited region set.")
+            else:
+                self.plugin.selected_region = QgsGeometry.fromPolygonXY([self.points])
+                print("Polygon closed and selected region set.")
             self.highlight_region()
-            print("Polygon closed and selected region set.")
             return
 
         # Add the new point to the list
@@ -404,7 +465,7 @@ def read_raster(path):
         crs = src.crs
         return data, transform, crs
 
-def dump_json(paths):
+def dump_json(paths, widget):
     """Read raster data and populate the JSON file."""
     # Read raster data
     slope_data, slope_transform, _ = read_raster(paths['slope'])
@@ -445,6 +506,12 @@ def dump_json(paths):
             x, y = slope_transform * (col, row)
             cell_name = f"{int(x)}_{int(y)}"
 
+            # Check if the cell is within the ignited region
+            ignited = False
+            if plugin.ignited_region:
+                point = QgsPointXY(x, y)
+                ignited = widget.plugin.ignited_region.contains(point)
+
             # Add cell to JSON
             data["cells"][cell_name] = {
                 "neighborhood": {},
@@ -452,16 +519,15 @@ def dump_json(paths):
                     "slope": float(slope_value),
                     "aspect": float(aspect_value),
                     "fuelModelNumber": fuel,
-                    "windDirection": WIND_DIRECTION,
-                    "windSpeed": WIND_SPEED,
+                    "windDirection": widget.wind_direction,
+                    "windSpeed": widget.wind_speed,
                     "x": float(x),
                     "y": float(y),
-                    "ignited": False
+                    "ignited": ignited
                 }
             }
 
-            # Define neighborhood (simple example: 4-connected neighbors)
-            neighborhood = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            neighborhood = [(0, -2), (0, -1), (0, 1), (0, 2), (-1, -1), (-1, 1)]
             for neighbor in neighborhood:
                 c = col + neighbor[0]
                 r = row + neighbor[1]
