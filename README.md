@@ -175,12 +175,22 @@ mkdir build
 cd build
 ```
 
-Run the CMake generator and invoke the build
+Run the CMake generator. You should see output similar to the following (may vary based on platform)
 
 ```pwsh
 cmake ..
+```
+
+![](doc/221.png)
+
+Run the CMake build command. You should see output similar to the following (may vary based on platform).
+You can safely ignore any warnings.
+
+```pwsh
 cmake --build .
 ```
+
+![](doc/222.png)
 
 You should now see the following files under `bin/`
 
