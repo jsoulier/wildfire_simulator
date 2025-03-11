@@ -1,0 +1,7 @@
+[general]
+name=Wildfire Simulator
+description=Load and convert map files to JSON, then execute simulation.
+version=0.1
+qgisMinimumVersion=3.34.15
+author=Alec Tratnik
+email=alec.tratnik@gmail.com

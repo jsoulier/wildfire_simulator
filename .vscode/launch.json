@@ -2,16 +2,28 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "debug",
+            "name": "basic",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/bin/capstone.exe",
+            "program": "${workspaceFolder}/basic/build/bin/wildfire_simulator.exe",
             "args": [
-                "res/map.json",
-                "10000000"
+                "<path to source json>",
+                "basic/ignitions.csv"
             ],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/basic",
             "preLaunchTask": "CMake: build",
-        }
+        },
+        {
+            "name": "advanced",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/advanced/build/bin/wildfire_simulator.exe",
+            "args": [
+                "<path to source json>",
+                "advanced/ignitions.csv"
+            ],
+            "cwd": "${workspaceFolder}/advanced",
+            "preLaunchTask": "CMake: build",
+        },
     ]
 }
