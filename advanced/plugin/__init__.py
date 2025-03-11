@@ -1,4 +1,4 @@
-from .MapLoader import MapLoaderPlugin
+from .plugin import WFSPlugin
 
 def classFactory(iface):
-    return MapLoaderPlugin(iface)
+    return WFSPlugin(iface)

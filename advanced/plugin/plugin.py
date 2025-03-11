@@ -41,9 +41,6 @@ import csv
 # CONSTANTS
 #########################
 
-START = (824399, 5237360)
-END = (831982, 5248133)
-SPARK = (825149, 5243548)
 RESOLUTION = 5
 WIND_SPEED = 30
 WIND_DIRECTION = 90
@@ -139,6 +136,10 @@ class WFSDockWidget(QDockWidget):
         self.select_button.clicked.connect(self.activate_selection)
         self.layout.addWidget(self.select_button)
 
+        self.confirm_selection_button = QPushButton("Confirm Drawn Area")
+        self.confirm_selection_button.clicked.connect(self.confirm_drawn_area)
+        self.layout.addWidget(self.confirm_selection_button)
+
         self.fire_origin_button = QPushButton("Select Fire Origin Area")
         self.fire_origin_button.clicked.connect(self.activate_fire_origin_selection)
         self.layout.addWidget(self.fire_origin_button)
@@ -177,11 +178,20 @@ class WFSDockWidget(QDockWidget):
                     selector.addItem(layer.name(), layer)
 
     def activate_selection(self):
-        """Activate the polygon selection tool."""
+        """Activate the polygon drawing tool."""
         self.plugin.iface.mapCanvas().setMapTool(self.map_tool)
+        print("Draw tool activated. Draw a polygon on the map.")
 
     def activate_fire_origin_selection(self):
         self.plugin.iface.mapCanvas().setMapTool(self.fire_origin_map_tool)
+
+    def confirm_drawn_area(self):
+        """Confirm the drawn polygon and set it as the selected region."""
+        if self.map_tool.points:
+            self.plugin.selected_region = QgsGeometry.fromPolygonXY([self.map_tool.points])
+            print("Selected region confirmed.")
+        else:
+            print("No polygon drawn. Please draw a polygon first.")
 
     def clear_selection(self):
         """Clear the current selection and rubber band."""
@@ -200,14 +210,13 @@ class WFSDockWidget(QDockWidget):
         self.plugin.iface.mapCanvas().setMapTool(None)
         print("Selection cleared!")
 
+
     def convert_to_json(self):
         """Clip the selected GeoTIFFs to the drawn area, process them, and output JSON."""
-
         slope_layer = self.slope_selector.currentData()
         aspect_layer = self.aspect_selector.currentData()
         landcover_layer = self.landcover_selector.currentData()
 
-<<<<<<< HEAD:scripts/MapLoader/MapLoader.py
         if slope_layer and aspect_layer and landcover_layer and self.plugin.selected_region and self.plugin.selected_region.isGeosValid():
             json_file_path, _ = QFileDialog.getSaveFileName(self, "Save JSON File", "", "JSON Files (*.json);;All Files (*)")
             if not json_file_path:
@@ -221,52 +230,39 @@ class WFSDockWidget(QDockWidget):
             clipped_aspect_path = os.path.splitext(json_file_path)[0] + "_aspect.tif"
             clipped_slope_path = os.path.splitext(json_file_path)[0] + "_slope.tif"
             clipped_land_path = os.path.splitext(json_file_path)[0] + "_landcover.tif"
-=======
-        if not slope_layer or not aspect_layer or not landcover_layer or not self.plugin.selected_region or not self.plugin.selected_region.isGeosValid():
-            raise Exception("No valid layers or selected region. Cannot convert to JSON.")
-        
-        # Create an in-memory mask layer from the drawn polygon
-        mask_layer = createTemporaryPolygonLayer(self.plugin.selected_region)
-        # Determine output file paths for the clipped rasters
-        json_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map.json")
-        clipped_aspect_path = os.path.splitext(json_file_path)[0] + "_aspect.tif"
-        clipped_slope_path = os.path.splitext(json_file_path)[0] + "_slope.tif"
-        clipped_land_path = os.path.splitext(json_file_path)[0] + "_landcover.tif"
->>>>>>> 7d2eee017fc5091fd2ce4debed4a91e79d399fd6:advanced/plugin/plugin.py
 
-        # Use the GDAL Clip algorithm to clip the rasters using the mask
-        params_aspect = {
-            "INPUT": aspect_layer.source(),
-            "MASK": mask_layer,
-            "CROP_TO_CUTLINE": True,
-            "OUTPUT": clipped_aspect_path
-        }
-        params_slope = {
-            "INPUT": slope_layer.source(),
-            "MASK": mask_layer,
-            "CROP_TO_CUTLINE": True,
-            "OUTPUT": clipped_slope_path
-        }
-        params_land = {
-            "INPUT": landcover_layer.source(),
-            "MASK": mask_layer,
-            "CROP_TO_CUTLINE": True,
-            "OUTPUT": clipped_land_path
-        }
+            # Use the GDAL Clip algorithm to clip the rasters using the mask
+            params_aspect = {
+                "INPUT": aspect_layer.source(),
+                "MASK": mask_layer,
+                "CROP_TO_CUTLINE": True,
+                "OUTPUT": clipped_aspect_path
+            }
+            params_slope = {
+                "INPUT": slope_layer.source(),
+                "MASK": mask_layer,
+                "CROP_TO_CUTLINE": True,
+                "OUTPUT": clipped_slope_path
+            }
+            params_land = {
+                "INPUT": landcover_layer.source(),
+                "MASK": mask_layer,
+                "CROP_TO_CUTLINE": True,
+                "OUTPUT": clipped_land_path
+            }
 
-        processing.run("gdal:cliprasterbymasklayer", params_aspect)
-        processing.run("gdal:cliprasterbymasklayer", params_slope)
-        processing.run("gdal:cliprasterbymasklayer", params_land)
+            processing.run("gdal:cliprasterbymasklayer", params_aspect)
+            processing.run("gdal:cliprasterbymasklayer", params_slope)
+            processing.run("gdal:cliprasterbymasklayer", params_land)
 
-        # Prepare paths for further processing:
-        paths = {
-            "aspect": clipped_aspect_path,
-            "slope": clipped_slope_path,
-            "land": clipped_land_path,
-            "json": json_file_path,
-        }
+            # Prepare paths for further processing:
+            paths = {
+                "aspect": clipped_aspect_path,
+                "slope": clipped_slope_path,
+                "land": clipped_land_path,
+                "json": json_file_path,
+            }
 
-<<<<<<< HEAD:scripts/MapLoader/MapLoader.py
             # Resample and align the landcover raster to match the slope and aspect rasters
             with rasterio.open(paths["slope"]) as slope_src:
                 slope_transform = slope_src.transform
@@ -299,47 +295,10 @@ class WFSDockWidget(QDockWidget):
 
                 paths["land"] = resampled_land_path
 
-            # # Process the clipped and resampled rasters and generate JSON
-            # maps = {
-            #     "slope": get_raw_maps(paths["slope"]),
-            #     "aspect": get_raw_maps(paths["aspect"]),
-            #     "land": get_raw_maps(paths["land"])
-            # }
-            # width = min(maps["slope"].width, maps["aspect"].width, maps["land"].width)
-            # height = min(maps["slope"].height, maps["aspect"].height, maps["land"].height)
-
             dump_json(paths)
             print("JSON conversion completed.")
         else:
             print("No valid layers or selected region. Cannot convert to JSON.")
-=======
-        # # Run processing to generate slope and aspect rasters from the clipped elevation
-        # feedback = QgsProcessingFeedback()
-        # try:
-        #     processing.run("qgis:slope", {
-        #         "INPUT": paths["elevation"],
-        #         "Z_FACTOR": 1.0,
-        #         "OUTPUT": paths["slope"]
-        #     }, feedback=feedback)
-        #     processing.run("qgis:aspect", {
-        #         "INPUT": paths["elevation"],
-        #         "Z_FACTOR": 1.0,
-        #         "OUTPUT": paths["aspect"]
-        #     }, feedback=feedback)
-        # except Exception as e:
-        #     print(f"Error generating slope or aspect: {e}")
-        #     return
-
-        maps = {
-            "slope": get_raw_maps(paths["slope"]),
-            "aspect": get_raw_maps(paths["aspect"]),
-            "land": get_raw_maps(paths["land"])
-        }
-
-        width = min(maps["slope"].width, maps["aspect"].width, maps["land"].width)
-        height = min(maps["slope"].height, maps["aspect"].height, maps["land"].height)
-        dump_json(maps, paths, width, height)
-        print("JSON conversion completed.")
 
     def on_cadmium_finish_running(self, csv_path):
         uri = f"file:///{csv_path}?delimiter=,&xField=x&yField=y&crs=EPSG:2959"
@@ -379,7 +338,6 @@ class WFSDockWidget(QDockWidget):
         self.cadmium_proc.kill()
         self.cadmium_button.show()
         self.cadmium_proc = None
->>>>>>> 7d2eee017fc5091fd2ce4debed4a91e79d399fd6:advanced/plugin/plugin.py
 
 class RegionSelectionTool(QgsMapToolEmitPoint):
     def __init__(self, iface, plugin, rubber_band):
@@ -392,14 +350,15 @@ class RegionSelectionTool(QgsMapToolEmitPoint):
         point = self.toMapCoordinates(event.pos())
         
         if len(self.points) > 2 and self.is_near_first_point(point):
-            self.points.append(self.points[0])  # Automatically close the polygon
+            # Automatically close the polygon
+            self.points.append(self.points[0])
             self.plugin.selected_region = QgsGeometry.fromPolygonXY([self.points])
             self.highlight_region()
+            print("Polygon closed and selected region set.")
             return
 
         # Add the new point to the list
         self.points.append(point)
-        self.plugin.selected_region = QgsGeometry.fromPolygonXY([self.points])
         self.highlight_region()
 
     def is_near_first_point(self, point, tolerance=50):
@@ -409,13 +368,14 @@ class RegionSelectionTool(QgsMapToolEmitPoint):
         return dist <= tolerance
 
     def highlight_region(self):
-        if self.plugin.selected_region:
-            self.rubber_band.reset()
-            for p in self.points:
-                self.rubber_band.addPoint(p)
+        """Highlight the drawn polygon on the map."""
+        self.rubber_band.reset()
+        for p in self.points:
+            self.rubber_band.addPoint(p)
 
     def clear_highlight(self):
-        self.plugin.reset()
+        """Clear the drawn polygon from the map."""
+        self.rubber_band.reset()
         self.plugin.iface.mapCanvas().refresh()
 
 #########################
