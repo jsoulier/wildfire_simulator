@@ -16,6 +16,34 @@ import numpy
 import math
 
 #########################
+# CONSTANTS
+#########################
+
+START = (824399, 5237360)
+END = (831982, 5248133)
+SPARK = (825149, 5243548)
+RESOLUTION = 5
+WIND_SPEED = 30
+WIND_DIRECTION = 90
+FUELS = {
+    1: 10,   # temperate or sub-polar needleleaf forest -> FM10
+    2: 13,   # sub-polar taiga -> FM13
+    5: 9,    # temperate or sub-polar broadleaf deciduous forest -> FM9
+    6: 8,    # forest foliage temperate or sub-polar -> FM8
+    8: 141,  # temperate or sub-polar shrubland -> SH1
+    10: 101, # temperate or sub-polar grassland -> GR1
+    11: 93,  # sub-polar or polar shrubland-lichen-moss -> NB3
+    12: 103, # sub-polar or polar grassland-lichen-moss -> GR3
+    13: 99,  # sub-polar or polar barren-lichen-moss -> NB9
+    14: 94,  # wetland -> NB4
+    15: 93,  # cropland -> NB3
+    16: 99,  # barren lands -> NB9
+    17: 91,  # urban -> NB1
+    18: 98,  # water -> NB8
+    19: 92,  # snow and ice -> NB2
+}
+
+#########################
 # PLUGIN CLASSES
 #########################
 
@@ -135,6 +163,7 @@ class MapLoaderDockWidget(QDockWidget):
             
             # Create an in-memory mask layer from the drawn polygon
             mask_layer = createTemporaryPolygonLayer(self.plugin.selected_region)
+            
             # Determine output file paths for the clipped rasters
             clipped_aspect_path = os.path.splitext(json_file_path)[0] + "_aspect.tif"
             clipped_slope_path = os.path.splitext(json_file_path)[0] + "_slope.tif"
@@ -172,32 +201,48 @@ class MapLoaderDockWidget(QDockWidget):
                 "json": json_file_path,
             }
 
-            # # Run processing to generate slope and aspect rasters from the clipped elevation
-            # feedback = QgsProcessingFeedback()
-            # try:
-            #     processing.run("qgis:slope", {
-            #         "INPUT": paths["elevation"],
-            #         "Z_FACTOR": 1.0,
-            #         "OUTPUT": paths["slope"]
-            #     }, feedback=feedback)
-            #     processing.run("qgis:aspect", {
-            #         "INPUT": paths["elevation"],
-            #         "Z_FACTOR": 1.0,
-            #         "OUTPUT": paths["aspect"]
-            #     }, feedback=feedback)
-            # except Exception as e:
-            #     print(f"Error generating slope or aspect: {e}")
-            #     return
+            # Resample and align the landcover raster to match the slope and aspect rasters
+            with rasterio.open(paths["slope"]) as slope_src:
+                slope_transform = slope_src.transform
+                slope_crs = slope_src.crs
+                slope_width = slope_src.width
+                slope_height = slope_src.height
 
-            maps = {
-                "slope": get_raw_maps(paths["slope"]),
-                "aspect": get_raw_maps(paths["aspect"]),
-                "land": get_raw_maps(paths["land"])
-            }
+            with rasterio.open(paths["land"]) as land_src:
+                land_data = land_src.read(1)
+                land_transform = land_src.transform
+                land_crs = land_src.crs
 
-            width = min(maps["slope"].width, maps["aspect"].width, maps["land"].width)
-            height = min(maps["slope"].height, maps["aspect"].height, maps["land"].height)
-            dump_json(maps, paths, width, height)
+                # Resample landcover to match slope raster
+                resampled_land_data = numpy.empty((slope_height, slope_width), dtype=numpy.float32)
+                rasterio._warp._reproject(
+                    source=land_data,
+                    destination=resampled_land_data,
+                    src_transform=land_transform,
+                    src_crs=land_crs,
+                    dst_transform=slope_transform,
+                    dst_crs=slope_crs,
+                    resampling=rasterio._warp.Resampling.nearest
+                )
+
+                # Save the resampled landcover raster
+                resampled_land_path = os.path.splitext(json_file_path)[0] + "_landcover_resampled.tif"
+                with rasterio.open(resampled_land_path, 'w', driver='GTiff', height=slope_height, width=slope_width,
+                                count=1, dtype=resampled_land_data.dtype, crs=slope_crs, transform=slope_transform) as dst:
+                    dst.write(resampled_land_data, 1)
+
+                paths["land"] = resampled_land_path
+
+            # # Process the clipped and resampled rasters and generate JSON
+            # maps = {
+            #     "slope": get_raw_maps(paths["slope"]),
+            #     "aspect": get_raw_maps(paths["aspect"]),
+            #     "land": get_raw_maps(paths["land"])
+            # }
+            # width = min(maps["slope"].width, maps["aspect"].width, maps["land"].width)
+            # height = min(maps["slope"].height, maps["aspect"].height, maps["land"].height)
+
+            dump_json(paths)
             print("JSON conversion completed.")
         else:
             print("No valid layers or selected region. Cannot convert to JSON.")
@@ -222,7 +267,7 @@ class RegionSelectionTool(QgsMapToolEmitPoint):
         self.plugin.selected_region = QgsGeometry.fromPolygonXY([self.points])
         self.highlight_region()
 
-    def is_near_first_point(self, point, tolerance=10):
+    def is_near_first_point(self, point, tolerance=50):
         """Check if the current point is near the first point (within a certain tolerance)."""
         first_point = self.points[0]
         dist = math.sqrt((first_point.x() - point.x())**2 + (first_point.y() - point.y())**2)
@@ -258,92 +303,88 @@ def createTemporaryPolygonLayer(geometry):
     mem_layer.updateExtents()
     return mem_layer
 
-# --- Functions from your colleague's to_json.py ---
-
-class Point:
-    def __init__(self, x, y, value):
-        self.x = x
-        self.y = y
-        self.value = value
-
-class Map:
-    def __init__(self, data, width, height):
-        self.data = data
-        self.width = width
-        self.height = height
-
-def get_raw_maps(path):
+def read_raster(path):
+    """Read a raster file and return its data and metadata."""
     with rasterio.open(path) as src:
-        crs = src.crs.to_string()
-        if crs != "EPSG:2959":
-            transform, width, height = rasterio._warp._calculate_default_transform(
-                src.crs, "EPSG:2959", src.width, src.height, *src.bounds)
-            data = numpy.empty((height, width), dtype=numpy.float32)
-            rasterio._warp._reproject(
-                source=src.read(1),
-                destination=data,
-                src_transform=src.transform,
-                src_crs=src.crs,
-                dst_transform=transform,
-                dst_crs="EPSG:2959",
-                resampling=rasterio._warp.Resampling.nearest)
-        else:
-            data = src.read(1)
-            transform = src.transform
-        # Define constants from your provided code
-        START = (466817, 5087372)
-        END = (483033, 5119989)
-        RESOLUTION = 100
-        points = []
-        width_val = 0
-        for y in range(START[1], END[1], RESOLUTION):
-            points.append([])
-            for x in range(START[0], END[0], RESOLUTION):
-                try:
-                    row, col = rasterio.transform.rowcol(transform, x, y)
-                    value = data[row, col]
-                    points[-1].append(Point(x, y, float(value)))
-                except:
-                    pass
-            width_val = max(width_val, len(points[-1]))
-        return Map(points, width_val, len(points))
+        data = src.read(1)  # Read the first band
+        transform = src.transform
+        crs = src.crs
+        return data, transform, crs
 
-def map_to_dict(map_obj):
-    """Convert a Map object to a JSON-serializable dictionary."""
-    return {
-        "width": map_obj.width,
-        "height": map_obj.height,
-        "data": [
-            [{"x": point.x, "y": point.y, "value": point.value} for point in row]
-            for row in map_obj.data
-        ]
+def dump_json(paths):
+    """Read raster data and populate the JSON file."""
+    # Read raster data
+    slope_data, slope_transform, _ = read_raster(paths['slope'])
+    aspect_data, _, _ = read_raster(paths['aspect'])
+    landcover_data, _, _ = read_raster(paths['land'])
+
+    # Get dimensions
+    height, width = slope_data.shape
+
+    # Initialize JSON structure
+    data = {
+        "cells": {
+            "default": {
+                "delay": "inertial"
+            }
+        }
     }
 
-def dump_json(maps, paths, width, height):
-    FUELS = {1: 10, 2: 13, 5: 9, 6: 8, 8: 141, 10: 101,
-             11: 93, 12: 103, 13: 99, 14: 94, 15: 93, 16: 100}
+    # Iterate over each cell
+    for row in range(height):
+        for col in range(width):
+            # Get values from rasters
+            slope_value = slope_data[row][col]
+            aspect_value = aspect_data[row][col]
+            landcover_value = landcover_data[row][col]
 
-    fuel_map = []
-    for i in range(height):
-        for j in range(width):
-            val = maps["land"].data[i][j].value
-            fuel_map.append({
-                "x": maps["land"].data[i][j].x,
-                "y": maps["land"].data[i][j].y,
-                "value": FUELS.get(int(val), 0)
-            })
+            # Skip invalid values
+            if slope_value <= -9999.0 or aspect_value <= -9999.0:
+                continue
 
-    config = {
-        "region": {
-            "slope": paths["slope"],
-            "aspect": paths["aspect"],
-            "land": paths["land"]
-        },
-        "fuels": fuel_map,
-        "slope": map_to_dict(maps["slope"]),  # Convert to dictionary
-        "aspect": map_to_dict(maps["aspect"])  # Convert to dictionary
-    }
+            # Map landcover value to fuel model
+            try:
+                fuel = FUELS[int(landcover_value)]
+            except KeyError:
+                continue
 
-    with open(paths["json"], "w") as json_file:
-        json.dump(config, json_file, indent=2)
+            # Get cell coordinates
+            x, y = slope_transform * (col, row)
+            cell_name = f"{int(x)}_{int(y)}"
 
+            # Add cell to JSON
+            data["cells"][cell_name] = {
+                "neighborhood": {},
+                "state": {
+                    "slope": float(slope_value),
+                    "aspect": float(aspect_value),
+                    "fuelModelNumber": fuel,
+                    "windDirection": WIND_DIRECTION,
+                    "windSpeed": WIND_SPEED,
+                    "x": float(x),
+                    "y": float(y),
+                    "ignited": False
+                }
+            }
+
+            # Define neighborhood (simple example: 4-connected neighbors)
+            neighborhood = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            for neighbor in neighborhood:
+                c = col + neighbor[0]
+                r = row + neighbor[1]
+
+                # Skip out-of-bounds neighbors
+                if c < 0 or r < 0 or c >= width or r >= height:
+                    continue
+
+                # Get neighbor coordinates
+                neighbor_x, neighbor_y = slope_transform * (c, r)
+                neighbor_name = f"{int(neighbor_x)}_{int(neighbor_y)}"
+
+                # Add neighbor to neighborhood
+                data["cells"][cell_name]["neighborhood"][neighbor_name] = RESOLUTION
+
+    # Write JSON to file
+    with open(paths['json'], "w") as f:
+        json.dump(data, f, indent=4)
+    print(f"JSON file saved to: {paths['json']}")
