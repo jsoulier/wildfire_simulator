@@ -264,7 +264,7 @@ cmake --build .
 
 ![](doc/222.png)
 
-You should now see the following files under `bin/`
+You should now see the following files under `bin/`. (pdb is Windows debug builds only)
 
 ```pwsh
 $ ls -l bin
