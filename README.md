@@ -7,6 +7,8 @@ Table of Contents
         2. [Visual Studio](#112-visual-studio)
         3. [QGIS (Advanced Setup)](#113-qgis-advanced-setup)
     2. [Linux](#12-linux)
+        1. [Debian-based](#121-debian-based)
+        2. [Other](#122-other)
 2. [Building the Wildfire Simulator](#2-building-the-wildfire-simulator)
     1. [Basic Setup](#21-basic-setup)
     2. [Advanced Setup](#22-advanced-setup)
@@ -193,9 +195,21 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtens
 
 ### 1.2 Linux
 
-> TODO: Will just be apt/dnf install git cmake g++
+### 1.2.1 Debian-based
 
-> TODO: Might still need manual QGIS installation to ensure 3.40
+For Debian-based systems (Debian, Ubuntu, Linux-mint, etc), run the following command:
+
+> NOTE: You must have sudo. If you do not, ask your Linux adminstrator for permissions or to install the packages
+
+```bash
+sudo apt-get install git cmake g++
+```
+
+### 1.2.2 Other
+
+For other Linux distributions, refer to the package manager of your platform
+
+> TODO: QGIS
 
 ## 2. Building the Wildfire Simulator
 
