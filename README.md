@@ -17,6 +17,8 @@ Table of Contents
 3. [Using the Wildfire Simulator](#3-using-the-wildfire-simulator)
     1. [Basic Usage](#31-basic-usage)
     2. [Advanced Usage](#32-advanced-usage)
+        1. [Preparing Maps](#321-preparing-maps)
+        2. [Simulating](#322-simulating)
 
 ## 1. Installation Instructions
 
@@ -322,3 +324,115 @@ For instructions on installing VSCode, see the [Cadmium Installation Manual](cad
 ### 3.1 Basic Usage
 
 ### 3.2 Advanced Usage
+
+#### 3.2.1 Preparing Maps
+
+> The government servers can be __very__ slow at times. You can also some sample maps from here: https://github.com/jsoulier/wildfire_simulator/releases/tag/v0.1
+
+1. To install a land cover map of Canada, navigate to the following link and press "Explore" followed by "Go to resource":
+https://open.canada.ca/data/en/dataset/ee1580ab-a23d-4f86-a09b-79763677eb47. The downloaded map will contain the entirety of Canada
+
+![](doc/3211.png)
+
+2. To install an elevation map of Canada, navigate to the following link and press "Explore" followed by "Go to resource":
+https://open.canada.ca/data/en/dataset/957782bf-847c-4644-a757-e383c0057995
+
+![](doc/3212.png)
+
+3. Press on "1m" for 1 meter resolution maps
+
+![](doc/3213.png)
+
+4. Press on the region of your choosing. In the following image, we choose Quebec (QC)
+
+![](doc/3214.png)
+
+5. Press on the region of your choosing. In the following image, we choose Riviere Gatineau (#1)
+
+![](doc/3215.png)
+
+6. Press on any dtm (digital terrain elevation) maps to download them. We chose the first one
+
+![](doc/3216.png)
+
+7. After everything has finished download, launch QGIS
+
+![](doc/3217.png)
+
+8. Press "Layer", "Add Layer", "Add Raster Layer" to open the Data Source Manager
+
+![](doc/3218.png)
+
+9. Press "File" and the triple dots
+
+![](doc/3219.png)
+
+10. Press the downloaded files (land cover, dtm) in your file explorer and press "Open"
+
+> These instructions are specific to the Windows 11 file explorer. It will look slightly different other platforms
+
+> You can select multiple files by holding down Left Control and left clicking
+
+![](doc/32110.png)
+
+11. Press "Add"
+
+![](doc/32111.png)
+
+12. You may see the following window. If you do, press "Ok"
+
+![](doc/32112.png)
+
+13. Close the Data Source Manager
+
+![](doc/32113.png)
+
+14. You should see 2 maps under the Layers panel on the left and a coloured map of Canada
+
+![](doc/32114.png)
+
+15. Right click on the dtm map in the Layers panel and press "Zoom to Layer(s)".
+You should see something similar to the following
+
+> You may also need to press "Move to Top". If the option is not visible, ignore
+
+![](doc/32115.png)
+
+16. The land cover map is approximately 2 gigabytes.
+You'll need to crop the map to use it for simulation to avoid running out of memory.
+Press "Raster", "Extraction", "Clip Raster by Extent"
+
+![](doc/32116.png)
+
+17. For the Input layer, press the pulldown and the land cover map
+
+![](doc/32117.png)
+
+18. For the Clipping extent, press the pulldown followed by "Calculate from layer" and the dtm map
+
+![](doc/32118.png)
+
+19. Optionally save the clipped map to a file
+
+![](doc/32119.png)
+
+20. Press "Run"
+
+![](doc/32120.png)
+
+21. You should now see a new map in the Layers panel
+
+> If you saved to a file, you may to refer to step 8 to load it
+
+![](doc/32121.png)
+
+22. Hide the old land cover map by toggling its visibility.
+If you zoom out, you should now see a similar land cover map but constrained to the size of the dtm map.
+
+> You can zoom by holding Left Control and scrolling with your mouse wheel
+
+![](doc/32122.png)
+
+#### 3.2.2 Simulating
+
+> Todo
