@@ -5,13 +5,13 @@ Table of Contents
     1. [Windows](#11-windows)
         1. [Git](#111-git)
         2. [Visual Studio](#112-visual-studio)
-        3. [QGIS (Advanced Setup)](#113-qgis-advanced-setup)
+        3. [QGIS (Advanced Model)](#113-qgis-advanced-model)
     2. [Linux](#12-linux)
         1. [Debian-based](#121-debian-based)
         2. [Other](#122-other)
 2. [Building the Wildfire Simulator](#2-building-the-wildfire-simulator)
-    1. [Basic Setup](#21-basic-setup)
-    2. [Advanced Setup](#22-advanced-setup)
+    1. [Basic Model](#21-basic-model)
+    2. [Advanced Model](#22-advanced-model)
         1. [CMake Options](#221-cmake-options)
     3. [VSCode](#23-vscode)
 3. [Using the Wildfire Simulator](#3-using-the-wildfire-simulator)
@@ -26,7 +26,7 @@ The widlfire simulator requires several dependencies:
 - Git
 - C++ compiler
 - CMake
-- QGIS (advanced setup)
+- QGIS (advanced model)
 
 For detailed instructions on installing these dependencies, please navigate to the platform-specific installation section.
 
@@ -157,7 +157,7 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtens
 
 ![](doc/11211.png)
 
-#### 1.1.3 QGIS (Advanced Setup)
+#### 1.1.3 QGIS (Advanced Model)
 
 1. Navigate to the following link and click "Skip it and go to download": https://qgis.org/download/
 
@@ -242,13 +242,13 @@ drwxr-xr-x 1 jaans 197610       0 Mar  8 14:24 doc/
 -rw-r--r-- 1 jaans 197610    3776 Mar  8 14:28 README.md
 ```
 
-Proceed with the [basic](#21-basic-setup) and/or [advanced](#22-advanced-setup) setup.
+Proceed with the [basic](#21-basic-model) and/or [advanced](#22-advanced-model) model.
 
-### 2.1 Basic Setup
+### 2.1 Basic Model
 
 > TODO:
 
-### 2.2 Advanced Setup
+### 2.2 Advanced Model
 
 Navigate to the advanced directory
 
