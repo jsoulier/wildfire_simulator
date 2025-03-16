@@ -432,6 +432,7 @@ Press "Raster", "Extraction", "Clip Raster by Extent"
 If you zoom out, you should now see a similar land cover map but constrained to the size of the dtm map.
 
 > You can zoom by holding Left Control and scrolling with your mouse wheel
+> You may need to bring the dtm map to the front by right clicking in the Layers panel and pressing "Move to Top"
 
 ![](doc/32122.png)
 
