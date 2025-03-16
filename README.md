@@ -327,7 +327,7 @@ For instructions on installing VSCode, see the [Cadmium Installation Manual](cad
 
 #### 3.2.1 Preparing Maps
 
-> The government servers can be __very__ slow at times. You can also some sample maps from here: https://github.com/jsoulier/wildfire_simulator/releases/tag/v0.1
+> The government servers can be __very__ slow at times. You can also some sample maps from here and continue from step 7: https://github.com/jsoulier/wildfire_simulator/releases/tag/v0.1
 
 1. To install a land cover map of Canada, navigate to the following link and press "Explore" followed by "Go to resource":
 https://open.canada.ca/data/en/dataset/ee1580ab-a23d-4f86-a09b-79763677eb47. The downloaded map will contain the entirety of Canada
