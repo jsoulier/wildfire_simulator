@@ -15,8 +15,8 @@ Table of Contents
         1. [CMake Options](#221-cmake-options)
     3. [VSCode](#23-vscode)
 3. [Using the Wildfire Simulator](#3-using-the-wildfire-simulator)
-    1. [Basic Usage](#31-basic-usage)
-    2. [Advanced Usage](#32-advanced-usage)
+    1. [Basic Model](#31-basic-model)
+    2. [Advanced Model](#32-advanced-model)
         1. [Preparing Maps](#321-preparing-maps)
         2. [Simulating](#322-simulating)
 
@@ -321,9 +321,9 @@ For instructions on installing VSCode, see the [Cadmium Installation Manual](cad
 
 ## 3. Using the Wildfire Simulator
 
-### 3.1 Basic Usage
+### 3.1 Basic Model
 
-### 3.2 Advanced Usage
+### 3.2 Advanced Model
 
 #### 3.2.1 Preparing Maps
 
