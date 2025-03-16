@@ -371,7 +371,7 @@ https://open.canada.ca/data/en/dataset/957782bf-847c-4644-a757-e383c0057995
 
 > These instructions are specific to the Windows 11 file explorer. It will look slightly different other platforms
 
-> You can select multiple files by holding down Left Control and left clicking
+> You can select multiple files by holding down Left Control and left clicking on the files
 
 ![](doc/32110.png)
 
