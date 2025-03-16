@@ -5,7 +5,7 @@ Table of Contents
     1. [Windows](#11-windows)
         1. [Git](#111-git)
         2. [Visual Studio](#112-visual-studio)
-        3. [QGIS (Advanced Model)](#113-qgis-advanced-model)
+        3. [QGIS (Advanced)](#113-qgis-advanced)
     2. [Linux](#12-linux)
         1. [Debian-based](#121-debian-based)
         2. [Other](#122-other)
@@ -157,7 +157,7 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtens
 
 ![](doc/11211.png)
 
-#### 1.1.3 QGIS (Advanced Model)
+#### 1.1.3 QGIS (Advanced)
 
 1. Navigate to the following link and click "Skip it and go to download": https://qgis.org/download/
 
@@ -327,7 +327,9 @@ For instructions on installing VSCode, see the [Cadmium Installation Manual](cad
 
 #### 3.2.1 Preparing Maps
 
-> The government servers can be __very__ slow at times. You can grab some sample maps from here and continue from step 7: https://github.com/jsoulier/wildfire_simulator/releases/tag/v0.1
+> The government servers can be __very__ slow at times.
+You can grab some sample maps from here (download the files with the .tif extension): https://github.com/jsoulier/wildfire_simulator/releases/tag/v0.1.
+Afterwards, proceed from step 7.
 
 1. To install a land cover map of Canada, navigate to the following link and press "Explore" followed by "Go to resource":
 https://open.canada.ca/data/en/dataset/ee1580ab-a23d-4f86-a09b-79763677eb47. The downloaded map will contain the entirety of Canada
