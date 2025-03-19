@@ -5,4 +5,3 @@ low_res
 __pycache__
 *.csv
 *.tif
-*.json

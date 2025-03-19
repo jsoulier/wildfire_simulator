@@ -234,6 +234,7 @@ class WFSDockWidget(QDockWidget):
         clipped_land_path = os.path.splitext(json_file_path)[0] + "_landcover.tif"
 >>>>>>> 7d2eee017fc5091fd2ce4debed4a91e79d399fd6:advanced/plugin/plugin.py
 
+
         # Use the GDAL Clip algorithm to clip the rasters using the mask
         params_aspect = {
             "INPUT": aspect_layer.source(),

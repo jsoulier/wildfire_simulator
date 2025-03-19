@@ -16,7 +16,7 @@ std::shared_ptr<cadmium::celldevs::AsymmCell<State, double>> addCell(
 
 int main(int argc, char** argv)
 {
-    if (argc < 2)
+    if (argc < 3)
     {
         std::cout << "Missing source json and destination csv" << std::endl;
         return 1;
