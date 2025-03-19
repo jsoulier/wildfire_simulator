@@ -172,6 +172,11 @@ class WFSDockWidget(QDockWidget):
         self.fire_origin_button.setEnabled(False)  # Disabled by default
         self.layout.addWidget(self.fire_origin_button)
 
+        self.confirm_ignited_button = QPushButton("Confirm Ignited Region")
+        self.confirm_ignited_button.clicked.connect(self.confirm_ignited_region)
+        self.confirm_ignited_button.setEnabled(False)  # Disabled by default
+        self.layout.addWidget(self.confirm_ignited_button)
+
         self.clear_button = QPushButton("Clear Selected Area")
         self.clear_button.clicked.connect(self.clear_selection)
         self.layout.addWidget(self.clear_button)
@@ -241,6 +246,24 @@ class WFSDockWidget(QDockWidget):
             print("No polygon drawn. Please draw a polygon first.")
             # Disable the fire origin button if no selected region exists
             self.fire_origin_button.setEnabled(False)
+    
+    def confirm_ignited_region(self):
+        """Confirm the drawn polygon and set it as the ignited region."""
+        if self.fire_origin_map_tool.points:
+            self.plugin.ignited_region = QgsGeometry.fromPolygonXY([self.fire_origin_map_tool.points])
+            print("Ignited region confirmed.")
+            self.confirm_ignited_button.setEnabled(False)  # Disable the button after confirmation
+        else:
+            print("No polygon drawn. Please draw a polygon first.")
+    
+    def activate_fire_origin_selection(self):
+        """Activate the fire origin selection tool."""
+        if self.plugin.selected_region:
+            self.plugin.iface.mapCanvas().setMapTool(self.fire_origin_map_tool)
+            self.confirm_ignited_button.setEnabled(True)  # Enable the button
+            print("Fire origin drawing tool activated. Draw a polygon within the selected region.")
+        else:
+            print("No selected region. Please draw a selected region first.")
 
     def clear_selection(self):
         """Clear the current selection and rubber band."""
@@ -258,8 +281,74 @@ class WFSDockWidget(QDockWidget):
         self.fire_origin_map_tool.points = []
         self.plugin.iface.mapCanvas().setMapTool(None)
         self.fire_origin_button.setEnabled(False)
-    print("Selection cleared!")
+        self.confirm_ignited_button.setEnabled(False)  # Disable the button
+        print("Selection cleared!")
 
+    def clip_ignited_region(self, json_file_path):
+        """Clip the ignited region as a binary raster and resample it to match the slope raster."""
+        if not self.plugin.ignited_region:
+            print("No ignited region to clip.")
+            return None
+
+        # Create an in-memory mask layer from the ignited region polygon
+        mask_layer = createTemporaryPolygonLayer(self.plugin.ignited_region)
+
+        # Create a binary raster with the same dimensions as the slope raster
+        slope_layer = self.slope_selector.currentData()
+        if not slope_layer:
+            print("No slope layer selected.")
+            return None
+
+        # Determine output file path for the clipped ignited region raster
+        
+        ignited_raster_path_temp = os.path.splitext(json_file_path)[0] + f"_ignited_temp.tif"
+        ignited_raster_path = os.path.splitext(json_file_path)[0] + f"_ignited.tif"
+
+
+        # Use the GDAL Clip algorithm to clip the raster using the mask
+        params = {
+            "INPUT": slope_layer.source(),
+            "MASK": mask_layer,
+            "CROP_TO_CUTLINE": True,
+            "OUTPUT": ignited_raster_path_temp
+        }
+
+        # Run the clip operation
+        processing.run("gdal:cliprasterbymasklayer", params)
+
+        # Open the slope raster to get its dimensions and transform
+        with rasterio.open(slope_layer.source()) as slope_src:
+            slope_height = slope_src.height
+            slope_width = slope_src.width
+            slope_transform = slope_src.transform
+            slope_crs = slope_src.crs
+
+        # Open the clipped ignited raster
+        with rasterio.open(ignited_raster_path_temp) as ignited_src:
+            ignited_data = ignited_src.read(1)
+            ignited_transform = ignited_src.transform
+            ignited_crs = ignited_src.crs
+
+            # Create an empty array for the resampled ignited raster
+            resampled_ignited_data = numpy.zeros((slope_height, slope_width), dtype=numpy.uint8)
+
+            # Resample the ignited raster to match the slope raster
+            rasterio._warp._reproject(
+                source=ignited_data,
+                destination=resampled_ignited_data,
+                src_transform=ignited_transform,
+                src_crs=ignited_crs,
+                dst_transform=slope_transform,
+                dst_crs=slope_crs,
+                resampling=rasterio._warp.Resampling.nearest
+            )
+
+            # Save the resampled ignited raster
+            with rasterio.open(ignited_raster_path, 'w', driver='GTiff', height=slope_height, width=slope_width,
+                            count=1, dtype=resampled_ignited_data.dtype, crs=slope_crs, transform=slope_transform) as dst:
+                dst.write(resampled_ignited_data, 1)
+
+        return ignited_raster_path
 
     def convert_to_json(self):
         """Clip the selected GeoTIFFs to the drawn area, process them, and output JSON."""
@@ -272,10 +361,10 @@ class WFSDockWidget(QDockWidget):
             if not json_file_path:
                 print("No JSON file path provided.")
                 return
-            
+
             # Create an in-memory mask layer from the drawn polygon
             mask_layer = createTemporaryPolygonLayer(self.plugin.selected_region)
-            
+
             # Determine output file paths for the clipped rasters
             clipped_aspect_path = os.path.splitext(json_file_path)[0] + "_aspect.tif"
             clipped_slope_path = os.path.splitext(json_file_path)[0] + "_slope.tif"
@@ -305,11 +394,15 @@ class WFSDockWidget(QDockWidget):
             processing.run("gdal:cliprasterbymasklayer", params_slope)
             processing.run("gdal:cliprasterbymasklayer", params_land)
 
-            # Prepare paths for further processing:
+            # Clip the ignited region as a binary raster
+            ignited_raster_path = self.clip_ignited_region(json_file_path)
+
+            # Prepare paths for further processing
             paths = {
                 "aspect": clipped_aspect_path,
                 "slope": clipped_slope_path,
                 "land": clipped_land_path,
+                "ignited": ignited_raster_path,
                 "json": json_file_path,
             }
 
@@ -412,6 +505,7 @@ class RegionSelectionTool(QgsMapToolEmitPoint):
             if self.is_ignited_region:
                 self.plugin.ignited_region = QgsGeometry.fromPolygonXY([self.points])
                 print("Polygon closed and ignited region set.")
+                print(f"Ignited region geometry: {self.plugin.ignited_region.asWkt()}")  # Debug print
             else:
                 self.plugin.selected_region = QgsGeometry.fromPolygonXY([self.points])
                 print("Polygon closed and selected region set.")
@@ -471,6 +565,7 @@ def dump_json(paths, widget):
     slope_data, slope_transform, _ = read_raster(paths['slope'])
     aspect_data, _, _ = read_raster(paths['aspect'])
     landcover_data, _, _ = read_raster(paths['land'])
+    ignited_data, _, _ = read_raster(paths['ignited']) if paths.get('ignited') else (None, None, None)
 
     # Get dimensions
     height, width = slope_data.shape
@@ -491,6 +586,7 @@ def dump_json(paths, widget):
             slope_value = slope_data[row][col]
             aspect_value = aspect_data[row][col]
             landcover_value = landcover_data[row][col]
+            ignited_value = ignited_data[row][col] if ignited_data is not None else 0
 
             # Skip invalid values
             if slope_value <= -9999.0 or aspect_value <= -9999.0:
@@ -506,11 +602,8 @@ def dump_json(paths, widget):
             x, y = slope_transform * (col, row)
             cell_name = f"{int(x)}_{int(y)}"
 
-            # Check if the cell is within the ignited region
-            ignited = False
-            if plugin.ignited_region:
-                point = QgsPointXY(x, y)
-                ignited = widget.plugin.ignited_region.contains(point)
+            # Set ignited to true or false based on the ignited raster
+            ignited = bool(ignited_value) if ignited_data is not None else False
 
             # Add cell to JSON
             data["cells"][cell_name] = {
@@ -523,10 +616,11 @@ def dump_json(paths, widget):
                     "windSpeed": widget.wind_speed,
                     "x": float(x),
                     "y": float(y),
-                    "ignited": ignited
+                    "ignited": ignited  # Set as true or false
                 }
             }
 
+            # Add neighborhood logic (unchanged)
             neighborhood = [(0, -2), (0, -1), (0, 1), (0, 2), (-1, -1), (-1, 1)]
             for neighbor in neighborhood:
                 c = col + neighbor[0]
