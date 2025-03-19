@@ -20,7 +20,7 @@ Table of Contents
         1. [Using the CLI](#321-using-the-cli)
             1. [Viewing the Results](#3211-viewing-the-results)
         2. [Preparing Maps](#322-preparing-maps)
-        3. [Installing the Plugin](#323-installing_the-plugin)
+        3. [Installing the Plugin](#323-installing-the-plugin)
         4. [Simulating](#324-simulating)
 
 ## 1. Installation Instructions
