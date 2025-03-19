@@ -394,15 +394,101 @@ From the advanced/ directory, run the following:
 ./build/bin/wildfire_simulator.exe samples/map.json results.csv
 ```
 
-The simulation will run for a while.
-You can view the current results at any time by opening results.csv in your preferred application.
+The simulation will now run for a while.
+You should see a file called results.csv in your current directory.
+You can view the current results at any time by opening it.
 You can cancel the simulation at any time by pressing Left Control and C at the same time.
 
 #### 3.2.1.1 Viewing the Results
 
+> NOTE: The following steps are automated using the plugin. Skip to 3.2.2 to continue with plugin steps
+
 1. It is difficult to analyze the results by reading the CSV. Instead, open QGIS.
 
-![](docs/viewing_1.png)
+![](doc/viewing_1.png)
+
+2. Press "Layer", "Add Layer", "Add Raster Layer" to open the Data Source Manager
+
+![](doc/viewing_2.png)
+
+3. Press "File" and the triple dots
+
+![](doc/viewing_3.png)
+
+4. Navigate to advanced/samples and select the file with the .tif extension.
+Afterwards, press "Open"
+
+![](doc/viewing_4.png)
+
+5. Press "Add"
+
+![](doc/viewing_5.png)
+
+6. You should now see a rectangular map on screen
+
+![](doc/viewing_6.png)
+
+7. Press "Layer", "Add Layer", "Add Delimited Text Layer"
+
+![](doc/viewing_7.png)
+
+8. Select the triple dots
+
+![](doc/viewing_8.png)
+
+9. Select results.csv and press "Open"
+
+![](doc/viewing_9.png)
+
+10. Select the "Geometry Definition" pulldown and the "Geometry CRS" selector to open the Coordinate Reference System Selector
+> NOTE: These are steps you may only have to do once.
+If the Add button is not grayed-out, you can proceed with 12.
+
+![](doc/viewing_10.png)
+
+11. In the Filter, type "2959" and select it under the Predefined Coordinate Reference Systems panel.
+Afterwards, press "Ok"
+
+![](doc/viewing_11.png)
+
+12. Press "Add"
+
+![](doc/viewing_12.png)
+
+13. You should now see an overlay of dots on the map (it may be a different colour for you).
+
+![](doc/viewing_13.png)
+
+14. Right click on results under the Layers panel and select "Properties"
+
+![](doc/viewing_14.png)
+
+15. Press on "Temporal" and use the following settings:
+- Enabled "Dynamic Temporal Control"
+- Set configuration to "Single Field with Date/Time"
+- Set Field to "time"
+- Enabled "Accumulate features over time"
+Afterwards, press "Ok"
+> NOTE: The points will disappear from the map
+
+![](doc/viewing_15.png)
+
+16. Press on the "Temporal Controller Panel"
+
+![](doc/viewing_16.png)
+
+17. In the Temporal Controller panel, use the following settings:
+- Use "Animated temporal navigation"
+- Press "Set to Full Range"
+- Use "seconds"
+
+![](doc/viewing_17.png)
+
+18. Use the slider to change the current time in the simulation.
+You should see when the slider is zero, there are very few points.
+The points should spread outwards as you increase the slider.
+
+![](doc/viewing_18.png)
 
 #### 3.2.2 Preparing Maps
 
