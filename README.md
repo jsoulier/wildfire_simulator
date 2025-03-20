@@ -661,7 +661,7 @@ You should see no errors
 
 ![](doc/installing_plugin_9.png)
 
-10. In the Plugins window, type "wildfire" and check the Wildfire Simulator plugin
+10. In the Plugins window, type "wildfire" and check the Wildfire Simulator plugin. Afterwards, press "Close"
 
 ![](doc/installing_plugin_10.png)
 
