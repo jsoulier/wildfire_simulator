@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <cfloat>
 #include <nlohmann/json.hpp>
 #include <cadmium/celldevs/asymm/cell.hpp>
 #include <cadmium/celldevs/asymm/config.hpp>

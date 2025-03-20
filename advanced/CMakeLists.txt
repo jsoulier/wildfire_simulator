@@ -13,3 +13,7 @@ target_link_libraries(${PROJECT_NAME} cadmium behave)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 target_compile_definitions(${PROJECT_NAME} PRIVATE _USE_MATH_DEFINES)
 target_compile_definitions(${PROJECT_NAME} PRIVATE _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
+add_custom_command(TARGET wildfire_simulator POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:wildfire_simulator>
+    ${CMAKE_CURRENT_SOURCE_DIR}/wildfire_simulator_plugin/wildfire_simulator.exe
+)
