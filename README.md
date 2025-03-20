@@ -616,34 +616,48 @@ You can close the shell afterwards
 ![](doc/installing_plugin_2.png)
 
 3. Open your file explorer and navigate to the advanced directory.
-You should see a folder called "wildfire_simulator_plugin"
+You should see a folder called "wildfire_simulator_plugin".
+Click on the folder and press Left Control and C and the same time to copy to your clipboard.
 
 ![](doc/installing_plugin_3.png)
 
-4. Copy the "wildfire_simulator_plugin" folder to the following directory:
+4. Navigate to the following directory:
 ```bash
-C:/Users/<user>/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins
+C:\Users\<user>\AppData\Roaming\QGIS\QGIS3\profiles\default\python
 ```
 > NOTE: You will need to modify the path according to your username
 
 ![](doc/installing_plugin_4.png)
 
-5. Start QGIS. If you are already running it, restart it.
+5. Right click in the folder view and select "New" and "Folder".
+Name the folder "plugins"
 
-6. To verify the rasterio installation, press "Plugins" and "Python Console".
+> NOTE: If you already see a directory called "plugins", you can skip and continue with step 6.
+
+> TODO: Windows won't let me take a screen shot of the "New" and "Folder" steps
+
+![](doc/installing_plugin_5.png)
+
+6. Navigate to the plugins folder and press Left Control and V at the same time to copy the plugin
+
+![](doc/installing_plugin_6.png)
+
+7. Start QGIS. If you are already running it, restart it.
+
+8. To verify the rasterio installation, press "Plugins" and "Python Console".
 In the Python Console, type "import rasterio".
 You should see no errors
 
-![](doc/installing_plugin_6.png)
 ![](doc/installing_plugin_7.png)
-
-7. Press "Plugins", "Manage and Install Plugins"
-
 ![](doc/installing_plugin_8.png)
 
-8. In the Plugins window, type "wildfire" and check the Wildfire Simulator plugin
+9. Press "Plugins", "Manage and Install Plugins"
 
 ![](doc/installing_plugin_9.png)
+
+10. In the Plugins window, type "wildfire" and check the Wildfire Simulator plugin
+
+![](doc/installing_plugin_10.png)
 
 #### 3.2.4 Simulating
 
