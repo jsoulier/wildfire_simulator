@@ -629,7 +629,8 @@ C:\Users\<username>\AppData\Roaming\QGIS\QGIS3\profiles\default\python
 ```
 > NOTE: You will need to modify the path according to your username
 
-> NOTE: You may want to enable hidden folders.
+> NOTE: The AppData folder will be hidden from you by default.
+While not required, you may be interested in enabling hidden folders.
 See [Enabling Hidden Folders on Windows](#41-enabling-hidden-folders-on-windows) for details
 
 ![](doc/installing_plugin_4.png)
