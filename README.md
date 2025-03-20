@@ -22,6 +22,8 @@ Table of Contents
         2. [Preparing Maps](#322-preparing-maps)
         3. [Installing the Plugin](#323-installing-the-plugin)
         4. [Simulating](#324-simulating)
+4. [Other](#4-other)
+    1. [Enabling Hidden Folders on Windows](#41-enabling-hidden-folders-on-windows)
 
 ## 1. Installation Instructions
 
@@ -623,9 +625,12 @@ Click on the folder and press Left Control and C and the same time to copy to yo
 
 4. Navigate to the following directory:
 ```bash
-C:\Users\<user>\AppData\Roaming\QGIS\QGIS3\profiles\default\python
+C:\Users\<username>\AppData\Roaming\QGIS\QGIS3\profiles\default\python
 ```
 > NOTE: You will need to modify the path according to your username
+
+> NOTE: You may want to enable hidden folders.
+See [Enabling Hidden Folders on Windows](#41-enabling-hidden-folders-on-windows) for details
 
 ![](doc/installing_plugin_4.png)
 
@@ -662,3 +667,19 @@ You should see no errors
 #### 3.2.4 Simulating
 
 > Todo
+
+## 4. Other
+
+### 4.1 Enabling Hidden Folders on Windows
+
+1. Open your File Explorer and click on "See More" (triple dots) and "Options"
+
+![](doc/hidden_folders_1.png)
+
+2. In the Folder Options window, press "View", "Show hidden files, folders, and drives", and "Ok"
+
+![](doc/hidden_folders_2.png)
+
+3. If you navigate to your home directory (C:\Users\<username>), you should now see an AppData directory
+
+![](doc/hidden_folders_3.png)
