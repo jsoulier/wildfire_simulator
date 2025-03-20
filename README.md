@@ -681,6 +681,6 @@ You should see no errors
 
 ![](doc/hidden_folders_2.png)
 
-3. If you navigate to your home directory (C:\Users\<username>), you should now see an AppData directory
+3. If you navigate to your home directory (`C:\Users\<username>`), you should now see an AppData directory
 
 ![](doc/hidden_folders_3.png)
