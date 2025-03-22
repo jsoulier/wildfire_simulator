@@ -17,7 +17,7 @@ Table of Contents
 3. [Using the Wildfire Simulator](#3-using-the-wildfire-simulator)
     1. [Basic Model](#31-basic-model)
     2. [Advanced Model](#32-advanced-model)
-        1. [Using the CLI](#321-using-the-cli)
+        1. [Using the Model](#321-using-the-model)
             1. [Viewing the Results](#3211-viewing-the-results)
         2. [Preparing Maps](#322-preparing-maps)
         3. [Installing the Plugin](#323-installing-the-plugin)
@@ -332,7 +332,7 @@ For instructions on installing VSCode, see the [Cadmium Installation Manual](cad
 
 ### 3.2 Advanced Model
 
-#### 3.2.1 Using the CLI
+#### 3.2.1 Using the Model
 
 > TODO: Revisit when we add the slider for moisture parameters
 
