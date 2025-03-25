@@ -41,9 +41,6 @@ import csv
 # CONSTANTS
 #########################
 
-RESOLUTION = 5
-WIND_SPEED = 30
-WIND_DIRECTION = 90
 FUELS = {
     1: 10,   # temperate or sub-polar needleleaf forest -> FM10
     2: 13,   # sub-polar taiga -> FM13
@@ -97,8 +94,9 @@ class WFSDockWidget(QDockWidget):
         self.iface = plugin.iface
 
         # Initialize wind speed and direction with default values
-        self.wind_speed = WIND_SPEED  # Default wind speed
-        self.wind_direction = WIND_DIRECTION  # Default wind direction
+        self.resolution = 50
+        self.wind_speed = 30 # Default wind speed
+        self.wind_direction = 0 # Default wind direction
 
         # Set up rubber bands
         self.plugin.rubber_band = QgsRubberBand(self.plugin.iface.mapCanvas(), QgsWkbTypes.PolygonGeometry)
@@ -114,6 +112,47 @@ class WFSDockWidget(QDockWidget):
         self.fire_origin_map_tool = RegionSelectionTool(self.iface, self, self.plugin.fire_origin_rubber_band, is_ignited_region=True)
 
         self.layout = QVBoxLayout()
+
+        self.refresh_button = QPushButton("Refresh Layers")
+        self.refresh_button.clicked.connect(self.refresh)
+        self.layout.addWidget(self.refresh_button)
+
+        # --- DTM layer dropdown ---
+        self.dtm_label = QLabel("Select dtm Layer:")
+        self.layout.addWidget(self.dtm_label)
+        self.dtm_selector = QComboBox()
+        self.populate_raster_layers(self.dtm_selector)
+        self.layout.addWidget(self.dtm_selector)
+
+        # --- Landcover layer dropdown ---
+        self.landcover_label = QLabel("Select Landcover Layer:")
+        self.layout.addWidget(self.landcover_label)
+        self.landcover_selector = QComboBox()
+        self.populate_raster_layers(self.landcover_selector)
+        self.layout.addWidget(self.landcover_selector)
+
+        # --- Buttons ---
+        self.select_button = QPushButton("Select Simulation Area")
+        self.select_button.clicked.connect(self.activate_selection)
+        self.layout.addWidget(self.select_button)
+
+        self.confirm_selection_button = QPushButton("Confirm Drawn Area")
+        self.confirm_selection_button.clicked.connect(self.confirm_drawn_area)
+        self.layout.addWidget(self.confirm_selection_button)
+
+        self.fire_origin_button = QPushButton("Select Fire Origin Area")
+        self.fire_origin_button.clicked.connect(self.activate_fire_origin_selection)
+        # self.fire_origin_button.setEnabled(False)  # Disabled by default
+        self.layout.addWidget(self.fire_origin_button)
+
+        self.confirm_ignited_button = QPushButton("Confirm Ignited Region")
+        self.confirm_ignited_button.clicked.connect(self.confirm_ignited_region)
+        # self.confirm_ignited_button.setEnabled(False)  # Disabled by default
+        self.layout.addWidget(self.confirm_ignited_button)
+
+        self.clear_button = QPushButton("Clear Selected Area")
+        self.clear_button.clicked.connect(self.clear_selection)
+        self.layout.addWidget(self.clear_button)
 
         # --- Wind Speed Slider ---
         self.wind_speed_label = QLabel(f"Wind Speed: {self.wind_speed} km/h")
@@ -137,49 +176,14 @@ class WFSDockWidget(QDockWidget):
         self.wind_direction_slider.valueChanged.connect(self.update_wind_direction)
         self.layout.addWidget(self.wind_direction_slider)
 
-        # --- Slope layer dropdown ---
-        self.slope_label = QLabel("Select Slope Layer:")
-        self.layout.addWidget(self.slope_label)
-        self.slope_selector = QComboBox()
-        self.populate_raster_layers(self.slope_selector)
-        self.layout.addWidget(self.slope_selector)
-
-        # --- Aspect layer dropdown ---
-        self.aspect_label = QLabel("Select Aspect Layer:")
-        self.layout.addWidget(self.aspect_label)
-        self.aspect_selector = QComboBox()
-        self.populate_raster_layers(self.aspect_selector)
-        self.layout.addWidget(self.aspect_selector)
-
-        # --- Landcover layer dropdown ---
-        self.landcover_label = QLabel("Select Landcover Layer:")
-        self.layout.addWidget(self.landcover_label)
-        self.landcover_selector = QComboBox()
-        self.populate_raster_layers(self.landcover_selector)
-        self.layout.addWidget(self.landcover_selector)
-
-        # --- Buttons ---
-        self.select_button = QPushButton("Select Simulation Area")
-        self.select_button.clicked.connect(self.activate_selection)
-        self.layout.addWidget(self.select_button)
-
-        self.confirm_selection_button = QPushButton("Confirm Drawn Area")
-        self.confirm_selection_button.clicked.connect(self.confirm_drawn_area)
-        self.layout.addWidget(self.confirm_selection_button)
-
-        self.fire_origin_button = QPushButton("Select Fire Origin Area")
-        self.fire_origin_button.clicked.connect(self.activate_fire_origin_selection)
-        self.fire_origin_button.setEnabled(False)  # Disabled by default
-        self.layout.addWidget(self.fire_origin_button)
-
-        self.confirm_ignited_button = QPushButton("Confirm Ignited Region")
-        self.confirm_ignited_button.clicked.connect(self.confirm_ignited_region)
-        self.confirm_ignited_button.setEnabled(False)  # Disabled by default
-        self.layout.addWidget(self.confirm_ignited_button)
-
-        self.clear_button = QPushButton("Clear Selected Area")
-        self.clear_button.clicked.connect(self.clear_selection)
-        self.layout.addWidget(self.clear_button)
+        self.resolution_label = QLabel(f"Resolution: {self.resolution}m")
+        self.layout.addWidget(self.resolution_label)
+        self.resolution_slider = QSlider(Qt.Horizontal)
+        self.resolution_slider.setMinimum(1)  # Minimum wind direction (0°)
+        self.resolution_slider.setMaximum(1000)  # Maximum wind direction (360°)
+        self.resolution_slider.setValue(self.resolution)  # Default value
+        self.resolution_slider.valueChanged.connect(self.update_resolution)
+        self.layout.addWidget(self.resolution_slider)
 
         self.convert_button = QPushButton("Convert to JSON")
         self.convert_button.clicked.connect(self.convert_to_json)
@@ -199,6 +203,12 @@ class WFSDockWidget(QDockWidget):
         container = QWidget()
         container.setLayout(self.layout)
         self.setWidget(container)
+
+    def refresh(self):
+        self.dtm_selector.clear()
+        self.landcover_selector.clear()
+        self.populate_raster_layers(self.dtm_selector)
+        self.populate_raster_layers(self.landcover_selector)
 
     def populate_raster_layers(self, selector):
         """Populate the dropdown with GeoTIFF (raster) layers."""
@@ -222,6 +232,12 @@ class WFSDockWidget(QDockWidget):
         self.wind_direction_label.setText(f"Wind Direction: {self.wind_direction}°")
         print(f"Wind direction updated to: {self.wind_direction}°")
 
+    def update_resolution(self, value):
+        """Update the wind direction when the slider is moved."""
+        self.resolution = value
+        self.resolution_label.setText(f"Resolution: {self.resolution}°")
+        print(f"Resolution updated to: {self.resolution}°")
+
     def activate_selection(self):
         """Activate the polygon drawing tool."""
         self.plugin.iface.mapCanvas().setMapTool(self.map_tool)
@@ -241,11 +257,11 @@ class WFSDockWidget(QDockWidget):
             self.plugin.selected_region = QgsGeometry.fromPolygonXY([self.map_tool.points])
             print("Selected region confirmed.")
             # Enable the fire origin button since a selected region exists
-            self.fire_origin_button.setEnabled(True)
-        else:
-            print("No polygon drawn. Please draw a polygon first.")
-            # Disable the fire origin button if no selected region exists
-            self.fire_origin_button.setEnabled(False)
+        #     self.fire_origin_button.setEnabled(True)
+        # else:
+        #     print("No polygon drawn. Please draw a polygon first.")
+        #     # Disable the fire origin button if no selected region exists
+        #     self.fire_origin_button.setEnabled(False)
     
     def confirm_ignited_region(self):
         """Confirm the drawn polygon and set it as the ignited region."""
@@ -280,8 +296,8 @@ class WFSDockWidget(QDockWidget):
         self.map_tool.points = []
         self.fire_origin_map_tool.points = []
         self.plugin.iface.mapCanvas().setMapTool(None)
-        self.fire_origin_button.setEnabled(False)
-        self.confirm_ignited_button.setEnabled(False)  # Disable the button
+        # self.fire_origin_button.setEnabled(False)
+        # self.confirm_ignited_button.setEnabled(False)  # Disable the button
         print("Selection cleared!")
 
     def clip_ignited_region(self, json_file_path):
@@ -294,9 +310,9 @@ class WFSDockWidget(QDockWidget):
         mask_layer = createTemporaryPolygonLayer(self.plugin.ignited_region)
 
         # Create a binary raster with the same dimensions as the slope raster
-        slope_layer = self.slope_selector.currentData()
-        if not slope_layer:
-            print("No slope layer selected.")
+        dtm_layer = self.dtm_selector.currentData()
+        if not dtm_layer:
+            print("No dtm layer selected.")
             return None
 
         # Determine output file path for the clipped ignited region raster
@@ -304,10 +320,9 @@ class WFSDockWidget(QDockWidget):
         ignited_raster_path_temp = os.path.splitext(json_file_path)[0] + f"_ignited_temp.tif"
         ignited_raster_path = os.path.splitext(json_file_path)[0] + f"_ignited.tif"
 
-
         # Use the GDAL Clip algorithm to clip the raster using the mask
         params = {
-            "INPUT": slope_layer.source(),
+            "INPUT": dtm_layer.source(),
             "MASK": mask_layer,
             "CROP_TO_CUTLINE": True,
             "OUTPUT": ignited_raster_path_temp
@@ -317,7 +332,7 @@ class WFSDockWidget(QDockWidget):
         processing.run("gdal:cliprasterbymasklayer", params)
 
         # Open the slope raster to get its dimensions and transform
-        with rasterio.open(slope_layer.source()) as slope_src:
+        with rasterio.open(dtm_layer.source()) as slope_src:
             slope_height = slope_src.height
             slope_width = slope_src.width
             slope_transform = slope_src.transform
@@ -352,36 +367,33 @@ class WFSDockWidget(QDockWidget):
 
     def convert_to_json(self):
         """Clip the selected GeoTIFFs to the drawn area, process them, and output JSON."""
-        slope_layer = self.slope_selector.currentData()
-        aspect_layer = self.aspect_selector.currentData()
+        dtm_layer = self.dtm_selector.currentData()
         landcover_layer = self.landcover_selector.currentData()
 
-        if slope_layer and aspect_layer and landcover_layer and self.plugin.selected_region and self.plugin.selected_region.isGeosValid():
-            json_file_path, _ = QFileDialog.getSaveFileName(self, "Save JSON File", "", "JSON Files (*.json);;All Files (*)")
-            if not json_file_path:
-                print("No JSON file path provided.")
-                return
+        if dtm_layer and landcover_layer and self.plugin.selected_region and self.plugin.selected_region.isGeosValid():
+            # json_file_path, _ = QFileDialog.getSaveFileName(self, "Save JSON File", "", "JSON Files (*.json);;All Files (*)")
+            # if not json_file_path:
+            #     print("No JSON file path provided.")
+            #     return
 
             # Create an in-memory mask layer from the drawn polygon
             mask_layer = createTemporaryPolygonLayer(self.plugin.selected_region)
 
+            root = os.path.dirname(os.path.abspath(__file__))
+            slope_path = os.path.join(root, "slope.tif")
+            aspect_path = os.path.join(root, "aspect.tif")
+            json_file_path = os.path.join(root, "map.json")
+
             # Determine output file paths for the clipped rasters
-            clipped_aspect_path = os.path.splitext(json_file_path)[0] + "_aspect.tif"
-            clipped_slope_path = os.path.splitext(json_file_path)[0] + "_slope.tif"
+            clipped_dtm_path = os.path.splitext(json_file_path)[0] + "_dtm.tif"
             clipped_land_path = os.path.splitext(json_file_path)[0] + "_landcover.tif"
 
             # Use the GDAL Clip algorithm to clip the rasters using the mask
-            params_aspect = {
-                "INPUT": aspect_layer.source(),
+            params_dtm = {
+                "INPUT": dtm_layer.source(),
                 "MASK": mask_layer,
                 "CROP_TO_CUTLINE": True,
-                "OUTPUT": clipped_aspect_path
-            }
-            params_slope = {
-                "INPUT": slope_layer.source(),
-                "MASK": mask_layer,
-                "CROP_TO_CUTLINE": True,
-                "OUTPUT": clipped_slope_path
+                "OUTPUT": clipped_dtm_path
             }
             params_land = {
                 "INPUT": landcover_layer.source(),
@@ -390,17 +402,40 @@ class WFSDockWidget(QDockWidget):
                 "OUTPUT": clipped_land_path
             }
 
-            processing.run("gdal:cliprasterbymasklayer", params_aspect)
-            processing.run("gdal:cliprasterbymasklayer", params_slope)
+            processing.run("gdal:cliprasterbymasklayer", params_dtm)
             processing.run("gdal:cliprasterbymasklayer", params_land)
 
             # Clip the ignited region as a binary raster
             ignited_raster_path = self.clip_ignited_region(json_file_path)
 
+            # Calculate slope and aspect
+            feedback = QgsProcessingFeedback()
+            processing.run("qgis:slope", {
+                "INPUT": dtm_layer,
+                "Z_FACTOR": 1.0,
+                "OUTPUT": slope_path, 
+            }, feedback=feedback)
+            processing.run("qgis:aspect", {
+                "INPUT": dtm_layer,
+                "Z_FACTOR": 1.0,
+                "OUTPUT": aspect_path, 
+            }, feedback=feedback)
+
+            slope_layer = QgsRasterLayer(slope_path, "slope")
+            aspect_layer = QgsRasterLayer(aspect_path, "aspect")
+            if not slope_layer.isValid():
+                print("Failed to load slope layer!")
+                return
+            if not aspect_layer.isValid():
+                print("Failed to load slope layer!")
+                return
+            QgsProject.instance().addMapLayer(slope_layer)
+            QgsProject.instance().addMapLayer(aspect_layer)
+
             # Prepare paths for further processing
             paths = {
-                "aspect": clipped_aspect_path,
-                "slope": clipped_slope_path,
+                "aspect": aspect_path,
+                "slope": slope_path,
                 "land": clipped_land_path,
                 "ignited": ignited_raster_path,
                 "json": json_file_path,
@@ -459,12 +494,13 @@ class WFSDockWidget(QDockWidget):
     def run_cadmium(self):
         if self.cadmium_proc:
             return
+        print("TESTING")
         root = os.path.dirname(os.path.abspath(__file__))
-        capstone = os.path.join(root, "capstone.exe")
+        simulator = os.path.join(root, "wildfire_simulator.exe")
         map_json = os.path.join(root, "map.json")
         map_csv = os.path.join(root, "ignition.csv")
         def callback():
-            self.cadmium_proc = subprocess.Popen([capstone, map_json, map_csv])
+            self.cadmium_proc = subprocess.Popen([simulator, map_json, map_csv])
             self.cancel_cadmium_button.show()
             self.cadmium_proc.wait()
             self.end_cadmium_run()
@@ -567,6 +603,8 @@ def dump_json(paths, widget):
     landcover_data, _, _ = read_raster(paths['land'])
     ignited_data, _, _ = read_raster(paths['ignited']) if paths.get('ignited') else (None, None, None)
 
+    resolution = widget.resolution
+
     # Get dimensions
     height, width = slope_data.shape
 
@@ -580,8 +618,10 @@ def dump_json(paths, widget):
     }
 
     # Iterate over each cell
-    for row in range(height):
-        for col in range(width):
+    y_resolution = int(resolution / 2 * 1.1547)
+    x_resolution = int(resolution * 2)
+    for row in range(0, height, y_resolution):
+        for col in range(0, width, x_resolution):
             # Get values from rasters
             slope_value = slope_data[row][col]
             aspect_value = aspect_data[row][col]
@@ -623,11 +663,20 @@ def dump_json(paths, widget):
             # Add neighborhood logic (unchanged)
             neighborhood = [(0, -2), (0, -1), (0, 1), (0, 2), (-1, -1), (-1, 1)]
             for neighbor in neighborhood:
-                c = col + neighbor[0]
-                r = row + neighbor[1]
+                c = col + neighbor[0] * x_resolution
+                r = row + neighbor[1] * y_resolution
 
                 # Skip out-of-bounds neighbors
                 if c < 0 or r < 0 or c >= width or r >= height:
+                    continue
+                neighbor_slope_value = slope_data[r][c]
+                neighbor_aspect_value = aspect_data[r][c]
+                if neighbor_slope_value <= -9999.0 or neighbor_aspect_value <= -9999.0:
+                    continue
+                landcover_value = landcover_data[r][c]
+                try:
+                    fuel = FUELS[int(landcover_value)]
+                except KeyError:
                     continue
 
                 # Get neighbor coordinates
@@ -635,7 +684,7 @@ def dump_json(paths, widget):
                 neighbor_name = f"{int(neighbor_x)}_{int(neighbor_y)}"
 
                 # Add neighbor to neighborhood
-                data["cells"][cell_name]["neighborhood"][neighbor_name] = RESOLUTION
+                data["cells"][cell_name]["neighborhood"][neighbor_name] = resolution
 
     # Write JSON to file
     with open(paths['json'], "w") as f:
