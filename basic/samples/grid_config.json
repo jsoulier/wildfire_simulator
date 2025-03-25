@@ -1,0 +1,27 @@
+{
+    "scenario": {
+      "shape": [100, 100],
+      "origin": [-24, -24]
+    },
+    "cells": {
+      "default": {
+        "delay": "inertial",
+        "cell_type": "FIRE",
+        "state": {"p": 100, "u": 1, "b": 0, "f": 0, "temp": 20, "burnRate": 0.05},
+        "config": {
+          "tempThreshold": 30.0,
+          "burnRate": 0.05,
+          "coolingRate": 0.01,
+          "heatTransfer": 0.1
+        },
+        "neighborhood": [
+          {"type": "von_neumann", "vicinity": 0.25, "range": 1},
+          {"type": "relative", "vicinity": 1, "neighbors": [[0, 0]]}
+        ]
+      },
+      "burning": {
+        "state": {"u": 0.9, "b": 0.1, "temp": 50},
+        "cell_map": [[12, 12]]
+      }
+    }
+  }
