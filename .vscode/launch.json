@@ -8,7 +8,7 @@
             "program": "${workspaceFolder}/basic/build/bin/wildfire_simulator.exe",
             "args": [
                 "<path to source json>",
-                "basic/ignitions.csv"
+                "${workspaceFolder}/basic/results.csv"
             ],
             "cwd": "${workspaceFolder}/basic",
             "preLaunchTask": "CMake: build",
@@ -20,7 +20,19 @@
             "program": "${workspaceFolder}/advanced/build/bin/wildfire_simulator.exe",
             "args": [
                 "<path to source json>",
-                "advanced/ignitions.csv"
+                "${workspaceFolder}/advanced/results.csv"
+            ],
+            "cwd": "${workspaceFolder}/advanced",
+            "preLaunchTask": "CMake: build",
+        },
+        {
+            "name": "debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/advanced/build/bin/wildfire_simulator.exe",
+            "args": [
+                "${workspaceFolder}/advanced/map.json",
+                "${workspaceFolder}/advanced/results.csv"
             ],
             "cwd": "${workspaceFolder}/advanced",
             "preLaunchTask": "CMake: build",

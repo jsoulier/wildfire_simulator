@@ -235,8 +235,8 @@ class WFSDockWidget(QDockWidget):
     def update_resolution(self, value):
         """Update the wind direction when the slider is moved."""
         self.resolution = value
-        self.resolution_label.setText(f"Resolution: {self.resolution}°")
-        print(f"Resolution updated to: {self.resolution}°")
+        self.resolution_label.setText(f"Resolution: {self.resolution}m")
+        print(f"Resolution updated to: {self.resolution}m")
 
     def activate_selection(self):
         """Activate the polygon drawing tool."""
@@ -617,11 +617,17 @@ def dump_json(paths, widget):
         }
     }
 
+    # TODO: hexagonal grid is broken
+
+    # shift = 0
+
     # Iterate over each cell
-    y_resolution = int(resolution / 2 * 1.1547)
-    x_resolution = int(resolution * 2)
-    for row in range(0, height, y_resolution):
-        for col in range(0, width, x_resolution):
+    # y_resolution = int(resolution / 2 * 1.1547)
+    # x_resolution = int(resolution * 2)
+    # for row in range(0, height, y_resolution):
+    #     for col in range(0, width, x_resolution):
+    for row in range(0, height, resolution):
+        for col in range(0, width, resolution):
             # Get values from rasters
             slope_value = slope_data[row][col]
             aspect_value = aspect_data[row][col]
@@ -640,6 +646,8 @@ def dump_json(paths, widget):
 
             # Get cell coordinates
             x, y = slope_transform * (col, row)
+            # if shift % 2:
+            #     x += int(x_resolution / 2)
             cell_name = f"{int(x)}_{int(y)}"
 
             # Set ignited to true or false based on the ignited raster
@@ -661,10 +669,16 @@ def dump_json(paths, widget):
             }
 
             # Add neighborhood logic (unchanged)
-            neighborhood = [(0, -2), (0, -1), (0, 1), (0, 2), (-1, -1), (-1, 1)]
+            # if not shift % 2:
+            #     neighborhood = [(0, -2), (0, -1), (0, 1), (0, 2), (-1, -1), (-1, 1)]
+            # else:
+            #     neighborhood = [(0, -2), (0, -1), (0, 1), (0, 2), (1, -1), (1, 1)]
+            neighborhood = [(1, 0), (-1, 0), (0, 1), (0, -1)]
             for neighbor in neighborhood:
-                c = col + neighbor[0] * x_resolution
-                r = row + neighbor[1] * y_resolution
+                # c = col + neighbor[0] * x_resolution
+                # r = row + neighbor[1] * y_resolution
+                c = col + neighbor[0] * resolution
+                r = row + neighbor[1] * resolution
 
                 # Skip out-of-bounds neighbors
                 if c < 0 or r < 0 or c >= width or r >= height:
@@ -681,10 +695,13 @@ def dump_json(paths, widget):
 
                 # Get neighbor coordinates
                 neighbor_x, neighbor_y = slope_transform * (c, r)
+                # if not shift % 2 and abs(neighbor[1]) == 1:
+                #     neighbor_x += int(x_resolution / 2)
                 neighbor_name = f"{int(neighbor_x)}_{int(neighbor_y)}"
 
                 # Add neighbor to neighborhood
                 data["cells"][cell_name]["neighborhood"][neighbor_name] = resolution
+        # shift += 1
 
     # Write JSON to file
     with open(paths['json'], "w") as f:
