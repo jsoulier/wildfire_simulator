@@ -118,7 +118,7 @@ class WFSDockWidget(QDockWidget):
         self.layout.addWidget(self.refresh_button)
 
         # --- DTM layer dropdown ---
-        self.dtm_label = QLabel("Select dtm Layer:")
+        self.dtm_label = QLabel("Select Elevation Layer:")
         self.layout.addWidget(self.dtm_label)
         self.dtm_selector = QComboBox()
         self.populate_raster_layers(self.dtm_selector)
@@ -136,21 +136,21 @@ class WFSDockWidget(QDockWidget):
         self.select_button.clicked.connect(self.activate_selection)
         self.layout.addWidget(self.select_button)
 
-        self.confirm_selection_button = QPushButton("Confirm Drawn Area")
+        self.confirm_selection_button = QPushButton("Confirm Simulation Area")
         self.confirm_selection_button.clicked.connect(self.confirm_drawn_area)
         self.layout.addWidget(self.confirm_selection_button)
 
-        self.fire_origin_button = QPushButton("Select Fire Origin Area")
+        self.fire_origin_button = QPushButton("Select Ignited Area")
         self.fire_origin_button.clicked.connect(self.activate_fire_origin_selection)
         # self.fire_origin_button.setEnabled(False)  # Disabled by default
         self.layout.addWidget(self.fire_origin_button)
 
-        self.confirm_ignited_button = QPushButton("Confirm Ignited Region")
+        self.confirm_ignited_button = QPushButton("Confirm Ignited Area")
         self.confirm_ignited_button.clicked.connect(self.confirm_ignited_region)
         # self.confirm_ignited_button.setEnabled(False)  # Disabled by default
         self.layout.addWidget(self.confirm_ignited_button)
 
-        self.clear_button = QPushButton("Clear Selected Area")
+        self.clear_button = QPushButton("Clear Selected Areas")
         self.clear_button.clicked.connect(self.clear_selection)
         self.layout.addWidget(self.clear_button)
 
@@ -185,15 +185,15 @@ class WFSDockWidget(QDockWidget):
         self.resolution_slider.valueChanged.connect(self.update_resolution)
         self.layout.addWidget(self.resolution_slider)
 
-        self.convert_button = QPushButton("Convert to JSON")
+        self.convert_button = QPushButton("Prepare Simulation Scenario")
         self.convert_button.clicked.connect(self.convert_to_json)
         self.layout.addWidget(self.convert_button)
 
-        self.cadmium_button = QPushButton("Run cadmium")
+        self.cadmium_button = QPushButton("Start Simulation")
         self.cadmium_button.clicked.connect(self.run_cadmium)
         self.layout.addWidget(self.cadmium_button)
 
-        self.cancel_cadmium_button = QPushButton("Cancel cadmium")
+        self.cancel_cadmium_button = QPushButton("End Simulation")
         self.cancel_cadmium_button.clicked.connect(self.end_cadmium_run)
         self.layout.addWidget(self.cancel_cadmium_button)
         self.cancel_cadmium_button.hide()
@@ -268,7 +268,7 @@ class WFSDockWidget(QDockWidget):
         if self.fire_origin_map_tool.points:
             self.plugin.ignited_region = QgsGeometry.fromPolygonXY([self.fire_origin_map_tool.points])
             print("Ignited region confirmed.")
-            self.confirm_ignited_button.setEnabled(False)  # Disable the button after confirmation
+            # self.confirm_ignited_button.setEnabled(False)  # Disable the button after confirmation
         else:
             print("No polygon drawn. Please draw a polygon first.")
     
@@ -276,7 +276,7 @@ class WFSDockWidget(QDockWidget):
         """Activate the fire origin selection tool."""
         if self.plugin.selected_region:
             self.plugin.iface.mapCanvas().setMapTool(self.fire_origin_map_tool)
-            self.confirm_ignited_button.setEnabled(True)  # Enable the button
+            # self.confirm_ignited_button.setEnabled(True)  # Enable the button
             print("Fire origin drawing tool activated. Draw a polygon within the selected region.")
         else:
             print("No selected region. Please draw a selected region first.")
@@ -429,8 +429,8 @@ class WFSDockWidget(QDockWidget):
             if not aspect_layer.isValid():
                 print("Failed to load slope layer!")
                 return
-            QgsProject.instance().addMapLayer(slope_layer)
-            QgsProject.instance().addMapLayer(aspect_layer)
+            QgsProject.instance().addMapLayer(slope_layer, False)
+            QgsProject.instance().addMapLayer(aspect_layer, False)
 
             # Prepare paths for further processing
             paths = {
