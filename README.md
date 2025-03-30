@@ -492,7 +492,7 @@ The points should spread outwards as you increase the slider.
 
 ![](doc/viewing_18.png)
 
-#### 3.2.2 Preparing Maps
+G#### 3.2.2 Preparing Maps
 
 > NOTE: The government servers can be __very__ slow at times.
 You can grab some sample maps from here: https://github.com/jsoulier/wildfire_simulator/releases/tag/v0.1.
@@ -628,9 +628,111 @@ You should see no errors
 
 ![](doc/installing_plugin_10.png)
 
+11. If everything worked, you should now see a button called "Wildfire Simulator"
+
+![](doc/installing_plugin_11.png)
+
 #### 3.2.4 Simulating
 
-> Todo
+> NOTE: You should have prepared your maps in [3.2.2](#322-preparing-maps)
+
+1. Open the Python Console by clicking on "Plugins" and "Python Console".
+This will allow you to see logs from the plugin.
+
+![](doc/simulating_1.png)
+
+2. Click the Wildfire Simulator button. You should see a panel open in the bottom left
+
+![](doc/simulating_2.png)
+
+3. Select the DTM map using the "Select Elevation Layer" pulldown
+
+![](doc/simulating_3.png)
+
+4. Select the landcover map using the "Select Landcover Layer" pulldown
+
+![](doc/simulating_4.png)
+
+5. Click "Select Simulation Area"
+
+![](doc/simulating_5.png)
+
+6. Click 3 points within the elevation and landcover map to form a green triangle containing the simulation area
+
+> NOTE: You can select more points if you wish
+
+> NOTE: Ensure you enclose the polygon (last point must be near the first point)
+
+> NOTE: If you wish to reset, press "Clear Selected Areas"
+
+![](doc/simulating_6.png)
+
+7. Click "Confirm Simulation Area"
+
+![](doc/simulating_7.png)
+
+8. Click "Select Ignited Area".
+Similar to before, select 3 points to form a red triangle.
+This time, the points must be within the simulation area.
+After, press "Confirm Ignited Area".
+
+![](doc/simulating_8.png)
+
+9. Click "Prepare Simulation Scenario".
+This will sample from the maps enclosed in the green triangle and convert them to JSON compatible with cadmium.
+
+> NOTE: QGIS will likely freeze for a short moment until the operation completes
+
+![](doc/simulating_9.png)
+
+10. The operation finished completing once you see "JSON conversion completed" in the Python console.
+
+![](doc/simulating_10.png)
+
+11. Click "Start Simulation".
+This will start the previously built executable in a seperate process (to avoid freezing QGIS).
+This process can take anywhere from 10 seconds to several hours (in this scenario, it will take a few seconds).
+
+> NOTE: QGIS may crash during this step. If it does, restart QGIS and press "Start Simulation" again.
+You don't need to repeat all the steps.
+
+> NOTE: To end the simulation early, you can press "End Simulation"
+
+![](doc/simulating_11.png)
+![](doc/simulating_12.png)
+
+12. Once the simulation finishes, you should see several dots on your screen.
+
+![](doc/simulating_13.png)
+
+13. Press the "Temporal Controller Panel" icon to open the panel.
+
+![](doc/simulating_14.png)
+
+14. Press "Animated temporal navigation"
+
+![](doc/simulating_15.png)
+
+15. Press "Set to Full Range"
+
+![](doc/simulating_16.png)
+
+16. Change the units to seconds
+
+![](doc/simulating_17.png)
+
+17. Optionally disable the elevation map to have a better view
+
+![](doc/simulating_18.png)
+
+18. Use the slider to view the fire at different stages in time
+
+![](doc/simulating_19.png)
+
+19. Optionally rerun the simulation with different wind speeds, direction, and sampling resolution.
+The wind direction is specified as relative to south and the sampling resolution defines the meters between samples (lower is more computationally expensive)
+
+![](doc/simulating_20.png)
 
 ## 4. Other
 

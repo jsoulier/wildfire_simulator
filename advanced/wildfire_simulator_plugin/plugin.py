@@ -1,6 +1,14 @@
 from PyQt5.QtWidgets import (
-    QLabel, QVBoxLayout, QComboBox, QPushButton, QWidget, QDockWidget,
-    QFileDialog, QAction, QSlider
+    QLabel,
+    QVBoxLayout,
+    QComboBox,
+    QPushButton,
+    QWidget,
+    QDockWidget,
+    QFileDialog,
+    QAction,
+    QSlider,
+    QMessageBox
 )
 from PyQt5.QtCore import Qt
 from qgis.core import (
@@ -494,7 +502,6 @@ class WFSDockWidget(QDockWidget):
     def run_cadmium(self):
         if self.cadmium_proc:
             return
-        print("TESTING")
         root = os.path.dirname(os.path.abspath(__file__))
         simulator = os.path.join(root, "wildfire_simulator.exe")
         map_json = os.path.join(root, "map.json")
