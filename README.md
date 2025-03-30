@@ -567,43 +567,6 @@ You should see something similar to the following
 
 ![](doc/maps_15.png)
 
-16. The land cover map is approximately 2 gigabytes.
-You'll need to crop the map to use it for simulation to avoid running out of memory.
-Press "Raster", "Extraction", "Clip Raster by Extent"
-
-![](doc/maps_16.png)
-
-17. For the Input layer, press the pulldown and the land cover map
-
-![](doc/maps_17.png)
-
-18. For the Clipping extent, press the pulldown followed by "Calculate from layer" and the dtm map
-
-![](doc/maps_18.png)
-
-19. Optionally save the clipped map to a file
-
-![](doc/maps_19.png)
-
-20. Press "Run"
-
-![](doc/maps_20.png)
-
-21. You should now see a new map in the Layers panel
-
-> NOTE: If you saved to a file, you may to refer to step 8 to load it
-
-![](doc/maps_21.png)
-
-22. Hide the old land cover map by toggling its visibility.
-If you zoom out, you should now see a similar land cover map but constrained to the size of the dtm map.
-
-> NOTE: You can zoom by holding Left Control and scrolling with your mouse wheel
-
-> NOTE: You may need to bring the dtm map to the front by right clicking in the Layers panel and pressing "Move to Top"
-
-![](doc/maps_22.png)
-
 #### 3.2.3 Installing the Plugin
 
 > TODO: Linux instructions will be different
